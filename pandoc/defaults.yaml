@@ -1,0 +1,37 @@
+from: markdown+link_attributes+native_divs+raw_tex+tex_math_dollars+inline_code_attributes
+
+metadata:
+  link-citations: true
+  bibliography: bibliography.bib
+  csl: ieee.csl
+
+  # pandoc-crossref options
+  chapters: true
+  autoSectionLabels: true
+  # figPrefix: "Abb."
+  # tblPrefix: "Tab."
+  # eqnPrefix: "Formel"
+
+variables:
+
+  linkcolor: Maroon
+  filecolor: Black
+  citecolor: Black
+  urlcolor: MediumBlue
+  toccolor: Black
+
+  cite-method: biblatex
+
+number-sections: true
+toc: false # insert TOC manually after abstract
+top-level-division: chapter
+resource-path:
+- "."
+- "assets"
+
+eol: lf
+
+filters:
+- ./filters/remove-date.sh
+- pandoc-crossref
+- pandoc-citeproc

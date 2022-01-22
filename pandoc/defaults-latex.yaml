@@ -1,0 +1,36 @@
+to: latex
+
+metadata:
+  listings: true
+  codeBlockCaptions: true
+
+variables:
+  documentclass: scrreprt
+
+  classoption:
+  - a4paper
+  - fontsize=11pt
+  - numbers=noenddot
+  - chapterprefix=false
+  - headings=optiontohead
+  - svgnames
+  - dvipsnames
+  - listof=nochaptergap # no chapter gap in list of figures/tables
+  # - oneside
+
+  hyperrefoptions:
+  - linktoc=all
+  # - hidelinks
+
+listings: true
+
+pdf-engine: latexmk
+pdf-engine-opt:
+- "-xelatex"
+- "-r"
+- ".latexmkrc"
+- "-g"
+- "-outdir=output-tex"
+
+include-in-header:
+- includes/header.tex

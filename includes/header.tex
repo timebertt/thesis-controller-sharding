@@ -1,0 +1,295 @@
+%%% begin header.text
+% \makeatletter
+% \providecommand*{\input@path}{}
+% % For latex-workshop only
+% \edef\input@path{{../convert/pandoc/includes/}{../pandoc/}{./../}\input@path}%
+% % Normal paths
+% \edef\input@path{{convert/pandoc/includes/}{pandoc/}{./}\input@path}% prepend
+% \makeatother
+
+% Language ==========================================
+\usepackage{microtype}
+\usepackage[american]{babel}
+\selectlanguage{american}
+\input{hyphenex/ushyphex.tex}
+
+% Calculations =======================================
+\usepackage{calc}
+
+% Some booleans ======================================
+\usepackage{ifthen}
+\newboolean{printVersion}
+\setboolean{printVersion}{true}
+
+
+%% Numerals ==========================================
+\usepackage{nth}
+
+%% Geometry ==========================================
+\newlength{\innermargin}
+\setlength{\innermargin}{1.9cm}
+\usepackage[nomarginpar,
+            textwidth=16.5cm,
+            textheight=240mm,
+            bottom=3.2cm,
+            headheight=15pt,
+            headsep=20pt,
+            footskip=30pt,
+            bindingoffset=5mm,
+            inner=\innermargin
+            ]{geometry}
+\setlength{\columnsep}{0.95cm}
+\usepackage[final]{pdfpages}
+
+%% Grafics ==========================================
+\usepackage{graphicx}
+\usepackage[export]{adjustbox}
+\usepackage{tikz}
+\usepackage{wrapfig}
+\usepackage[absolute]{textpos}
+
+%% Caption ===========================================
+\usepackage[%
+    format=plain,
+    justification=centering,
+    margin=12pt,
+    font=normal,
+    labelfont=bf
+]{caption}
+
+\DeclareCaptionStyle{figurecaption}{
+    format=plain,
+    justification=centering,
+    margin=12pt,
+    font=normal,
+    labelfont=bf,
+    position=bottom,
+    aboveskip=10pt,
+    belowskip=-5pt
+}
+
+\DeclareCaptionStyle{tablecaption}{
+    format=plain,
+    justification=centering,
+    margin=12pt,
+    font=normal,
+    labelfont=bf,
+    position=bottom,
+    aboveskip=5pt,
+    belowskip=5pt
+}
+
+\usepackage[]{subcaption}
+\captionsetup[figure]{style=figurecaption}
+\captionsetup[table]{style=tablecaption}
+
+% continuous figure and table numbering
+\counterwithout{figure}{chapter}
+\counterwithout{table}{chapter}
+
+% set caption label style to arabic
+\renewcommand{\thefigure}{\arabic{figure}}
+
+% Footnotes
+\usepackage[perpage,para]{footmisc}
+% ====================================================
+
+%% Tables ============================================
+\usepackage{array}
+%\usepackage{ctable}
+\usepackage{multirow}
+\usepackage{tabularx}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{supertabular}
+\usepackage{ltxtable}
+\usepackage{collcell}
+\usepackage{makecell}
+\usepackage{colortbl}
+\usepackage{xcolor}
+% ====================================================
+
+%% Use Links & Refs ==================================
+\ifthenelse{\boolean{printVersion}}{
+    \colorlet{myurlcolor}{gray!50!black}%
+    \colorlet{mylinkcolor}{gray!50!black}%
+    \colorlet{mycitecolor}{gray!50!black}%
+    \colorlet{myanchorcolor}{gray!50!black}%
+    \colorlet{mybackrefcolor}{gray!10!black}%
+}{%
+    \colorlet{myurlcolor}{blue!50!black}%
+    \colorlet{mylinkcolor}{blue!50!black}%
+    \colorlet{mycitecolor}{blue!50!black}%
+    \colorlet{myanchorcolor}{blue!50!black}%
+    \colorlet{mybackrefcolor}{green!35!black}%
+}
+
+% Loaded from pandoc
+% \usepackage[hidelinks,
+% colorlinks = true,
+% linkcolor = black,
+% urlcolor  = myurlcolor,
+% citecolor = black,
+% anchorcolor = black]{hyperref}
+
+%% Quotes =============================================
+\usepackage[font=itshape,vskip=5pt]{quoting}
+
+% Hypenate tt text
+\usepackage[htt]{hyphenat}
+
+%% Title & Headings ==================================
+
+\renewcommand*\chapterheadstartvskip{\vspace*{18pt}}
+\renewcommand*\chapterheadendvskip{\vspace*{8pt}}
+
+% Tocless Command ====================================
+\newcommand{\nocontentsline}[3]{}
+\newcommand{\tocless}[2]{\bgroup\let\addcontentsline=\nocontentsline#1{#2}\egroup}
+
+% Make some floats adjustments =======================
+% make floatbarrier at each section
+\usepackage[section]{placeins}
+
+% spacing between floats and text/floats
+% \setlength{\textfloatsep}{20pt plus 2pt minus 4pt}
+% \setlength{\floatsep}{12pt plus 2pt minus 2pt}
+\setlength{\intextsep}{20pt plus 3pt minus 3pt}
+
+% \setcounter{topnumber}{2}
+% \setcounter{bottomnumber}{2}
+% \setcounter{totalnumber}{3}     % 2 may work better
+% \setcounter{dbltopnumber}{2}    % for 2-column pages
+\renewcommand{\topfraction}{0.85}
+\renewcommand{\bottomfraction}{0.8}
+\renewcommand{\textfraction}{0.07}
+\renewcommand{\floatpagefraction}{0.8}
+%\renewcommand{\dbltopfraction}{.66}
+%\renewcommand{\dblfloatpagefraction}{.8}
+
+% Allow display break
+%\allowdisplaybreaks[3]
+%=====================================================
+
+% Clever Refs
+\usepackage{cleveref} % load it after thmtools (there is some problem)
+\crefname{appsec}{appendix}{appendices}
+
+\KOMAoptions{cleardoublepage=empty}
+
+%=====================================================
+%custom stuff ========================================
+%=====================================================
+
+\usepackage{lipsum}
+% include list of figures, etc. in TOC
+\usepackage[
+    nottoc, % exclude TOC ref from TOC
+    ]{tocbibind}
+
+% listing options
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\color{codegray},
+    stringstyle=\color{codepurple},
+    % basicstyle=\ttfamily\footnotesize,
+    basicstyle=\ttfamily,
+    breakatwhitespace=false
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    numbers=left,
+    numbersep=5pt,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=2
+}
+
+\lstset{style=mystyle}
+
+\usepackage{todonotes}
+\usepackage{lipsum}
+
+%%% custom title page
+\newcommand{\TitlePageTitle}{Approaches for Kubernetes Controller Sharding}
+\newcommand{\ShortTitle}{Approaches for Kubernetes Controller Sharding}
+\newcommand{\Degree}{Master of Science (M.Sc.)}
+\newcommand{\Course}{Informatik}
+\newcommand{\EnrollmentNumber}{8559152}
+\newcommand{\Company}{SAP SE}
+\newcommand{\Module}{Studienarbeit (T3MX0201)}
+\newcommand{\Lecturer}{Prof. Dr.-Ing. habil. Dennis Pfisterer}
+\newcommand{\Semester}{Wintersemester 2021/22}
+\newcommand{\AdditionalTitlePageLogo}{}
+% \newcommand{\AdditionalTitlePageLogo}{\fbox{\includegraphics[width=3cm]{logo/...}}}
+\newcommand{\TypeOfDocument}{Studienarbeit}
+\newcommand{\Date}{TBD}
+
+\makeatletter
+\renewcommand*{\maketitle}{%
+\begin{titlepage}
+\begin{center}
+\vspace*{-2cm}
+\AdditionalTitlePageLogo\hfill\includegraphics[width=5cm]{logo/dhbw-cas.pdf}\\[2cm]
+{\Huge{\TitlePageTitle}\par}
+\vspace{1.5cm}
+{\Huge\scshape \TypeOfDocument}\\[1cm]
+{\large für die Prüfung zum}\\[0.2cm]
+{\Large \Degree}\\[1.5cm]
+{\large im Studiengang}\\[0.2cm]
+{\large \Course}\\[1.5cm]
+{\large am Center for Advanced Studies}\\[0.2cm]
+{\large der Dualen Hochschule Baden-Württemberg}\\[0.5cm]
+{\large von}\\[0.5cm]
+{\large\bfseries \@author}\\[1cm]
+\vfill
+\end{center}
+\begin{tabular}{l@{\hspace{2cm}}l}
+Abgabefrist & \Date \\
+Matrikelnummer & \EnrollmentNumber \\
+Modul & \Module \\
+Betreuer & \Lecturer \\
+Semester & \Semester \\
+Dualer Partner & \Company \\
+\end{tabular}
+\end{titlepage}
+}
+\makeatother
+
+%%% custom header + footer
+\usepackage{fancyhdr}
+\fancypagestyle{plain}{% % overwrite plain pagestyle for entire document
+\fancyhf{} % clear all header and footer fields
+\fancyhead[L]{Tim Ebert}
+\fancyhead[R]{\ShortTitle}
+\fancyfoot[R]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0.4pt}}
+\pagestyle{plain}
+
+% continue roman numbering in appendix
+% https://tex.stackexchange.com/questions/166416/continue-previous-roman-page-numbering-after-changing-to-arabic
+\newcounter{savepage}
+
+%%% spacing
+\usepackage{setspace}
+\onehalfspacing % spacing between lines
+
+\setlength{\parindent}{0pt} % paragraph indententation
+\setlength{\parskip}{0.8em} % spacing between paragraphs
+
+% % don't break page on new chapter
+% \usepackage{etoolbox}
+% \makeatletter
+% \patchcmd{\scr@startchapter}{\if@openright\cleardoublepage\else\clearpage\fi}{}{}{}
+% \makeatother
+
+%%% end header.text
