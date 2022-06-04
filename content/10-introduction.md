@@ -106,8 +106,16 @@
   - n to n (e.g. controller per namespace)
   - n to m, with n > m (e.g. controller for multiple namespaces)
 
+- problems
+  - controller doesn't only watch controlled object, but also owned objects and dependents
+    - restrict watch only possible on namespace basis, but not
+
 ## Implementation
 
+- replica discovery
+  - membership protocol?
+  - gossip between replicas?
+  - leases?
 - manifesting sharding decisions
   - in objects themselves
   - or in dedicated objects
@@ -117,6 +125,7 @@
     - selectable on watch connection
     - users can remove labels -> should be deterministic / cached
   - status field
+    - only possible on custom resources you control
     - needs field selector to be selectable
     - not supported using CRDs
 - sharding controller
