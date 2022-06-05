@@ -1,4 +1,4 @@
-%%% begin header.text
+%%% begin header.tex
 % \makeatletter
 % \providecommand*{\input@path}{}
 % % For latex-workshop only
@@ -9,7 +9,7 @@
 
 % Language ==========================================
 \usepackage{microtype}
-\usepackage[american]{babel}
+%\usepackage[american]{babel}
 \selectlanguage{american}
 \input{hyphenex/ushyphex.tex}
 
@@ -172,6 +172,7 @@
 %=====================================================
 
 % Clever Refs
+\usepackage{hyperref}
 \usepackage{cleveref} % load it after thmtools (there is some problem)
 \crefname{appsec}{appendix}{appendices}
 

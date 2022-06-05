@@ -44,6 +44,8 @@ $(HTML): $(BUILDDIR) $(MD_IN) $(PLOT_PDF_FILES)
 open-html:
 	@open $(HTML)
 
+plots: $(PLOT_PDF_FILES)
+
 $(PLOTS_DIR)/%.pdf: $(PLOTS_DIR)/%-plot.py $(PLOTS_DIR)/%-plot.csv
 	@echo "> Plotting $(@F)"
 	@cd $(<D); ./$(<F)
@@ -62,7 +64,11 @@ install-requirements:
 
 .PHONY: install-python-requirements
 install-python-requirements:
-	python -m pip install -r requirements.txt
+	@if [ "$$(source /etc/os-release && echo $$ID)" = alpine ] ; then \
+		apk add py3-matplotlib=~3.3 ; \
+	else \
+		python3 -m pip install matplotlib~=3.3 ; \
+	fi
 
 .PHONY: count-words
 count-words:

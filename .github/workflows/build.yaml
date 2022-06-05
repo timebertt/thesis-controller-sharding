@@ -1,0 +1,30 @@
+name: Build
+
+on:
+  release:
+    types:
+    - published
+  push:
+    branches:
+    - master
+    tags:
+    - v*
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        lfs: true
+    - run: git lfs checkout
+    - uses: docker://ghcr.io/timebertt/markdown-paper-setup:sha-fb062a7
+      id: build
+      with:
+        entrypoint: /bin/sh
+        args: -c "make install-python-requirements pdf"
+    - uses: actions/upload-artifact@v3
+      with:
+        name: paper
+        path: build/paper.pdf
+        if-no-files-found: error
