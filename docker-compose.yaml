@@ -1,0 +1,12 @@
+version: '3'
+
+services:
+  paper:
+    image: ghcr.io/timebertt/markdown-paper-setup:sha-fb062a7
+    command:
+    - -c
+    - "while true; do sleep 2; done"
+    stdin_open: true
+    tty: true
+    volumes:
+    - ".:/data"
