@@ -18,6 +18,7 @@ $(PDF): $(BUILDDIR) $(MD_IN) $(PLOT_PDF_FILES)
 	@echo "> Building PDF"
 	@pandoc $(MD_IN) \
 	--fail-if-warnings \
+	--citeproc \
 	--defaults "pandoc/defaults.yaml" \
 	--defaults "pandoc/defaults-latex.yaml" \
 	--metadata-file $(METADATA) \
@@ -33,6 +34,7 @@ $(HTML): $(BUILDDIR) $(MD_IN) $(PLOT_PDF_FILES)
 	@echo "> Building HTML"
 	@pandoc $(MD_IN) \
 	--fail-if-warnings \
+	--citeproc \
 	--defaults "pandoc/defaults.yaml" \
 	--metadata-file $(METADATA) \
 	--to=html5 \
@@ -56,7 +58,7 @@ clean-plots:
 
 .PHONY: install-requirements
 install-requirements:
-	brew install pandoc pandoc-citeproc pandoc-crossref
+	brew install pandoc pandoc-crossref
 
 .PHONY: install-python-requirements
 install-python-requirements:
