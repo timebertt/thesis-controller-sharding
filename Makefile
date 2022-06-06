@@ -64,9 +64,7 @@ install-requirements:
 
 .PHONY: install-python-requirements
 install-python-requirements:
-	@if [ "$$(source /etc/os-release && echo $$ID)" = alpine ] ; then \
-		apk add py3-matplotlib=~3.3 ; \
-	else \
+	@if ! python3 -m pip show matplotlib >/dev/null ; then \
 		python3 -m pip install matplotlib~=3.3 ; \
 	fi
 

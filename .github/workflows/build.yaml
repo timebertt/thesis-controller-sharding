@@ -18,7 +18,7 @@ jobs:
       with:
         lfs: true
     - run: git lfs checkout
-    - uses: docker://ghcr.io/timebertt/markdown-paper-setup:sha-fb062a7
+    - uses: docker://ghcr.io/timebertt/markdown-paper-setup/python:sha-a16b6ef
       id: build
       with:
         entrypoint: /bin/sh
