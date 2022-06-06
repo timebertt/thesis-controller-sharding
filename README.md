@@ -1,5 +1,7 @@
 # Study Thesis on Kubernetes Controller Sharding
 
+![build status](https://github.com/timebertt/thesis-controller-sharding/actions/workflows/build.yaml/badge.svg?event=push)
+
 ## Abstract
 
 TBA
