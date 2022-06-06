@@ -1,2 +1,5 @@
-\chapter*{Literaturverzeichnis}
-\addcontentsline{toc}{chapter}{Literaturverzeichnis}
+\chapter*{List of References}
+\addcontentsline{toc}{chapter}{List of References}
+
+::: {#refs}
+:::

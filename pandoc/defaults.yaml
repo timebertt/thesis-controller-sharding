@@ -2,6 +2,7 @@ from: markdown+link_attributes+native_divs+raw_tex+tex_math_dollars+inline_code_
 
 metadata:
   link-citations: true
+  link-bibliography: true
   bibliography: bibliography.bib
   csl: ieee.csl
 
@@ -20,8 +21,6 @@ variables:
   urlcolor: MediumBlue
   toccolor: Black
 
-  cite-method: biblatex
-
 number-sections: true
 toc: false # insert TOC manually after abstract
 top-level-division: chapter
@@ -34,4 +33,5 @@ eol: lf
 filters:
 - ./filters/remove-date.sh
 - pandoc-crossref
+- citeproc
 
