@@ -25,4 +25,4 @@ It attempts to lift the restriction of having only one active replica per contro
 For this, mechanisms are required for determining which instance is responsible for which object to prevent conflicting actions.
 The thesis evaluates if and how proven sharding mechanisms from the field of distributed databases can be applied to this problem.
 
-\todo[inline]{(?) no canary rollout: no able to gradually shift leadership}
+\todo{canary rollout?}
