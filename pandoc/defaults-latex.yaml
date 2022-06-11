@@ -9,7 +9,7 @@ variables:
 
   classoption:
   - a4paper
-  - fontsize=11pt
+  - fontsize=12pt
   - numbers=noenddot
   - chapterprefix=false
   - headings=optiontohead
