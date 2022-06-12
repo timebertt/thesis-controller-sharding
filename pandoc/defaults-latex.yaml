@@ -2,7 +2,6 @@ to: latex
 
 metadata:
   listings: true
-  codeBlockCaptions: true
 
 variables:
   documentclass: scrreprt
@@ -21,8 +20,6 @@ variables:
   hyperrefoptions:
   - linktoc=all
   # - hidelinks
-
-listings: true
 
 pdf-engine: latexmk
 pdf-engine-opt:

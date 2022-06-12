@@ -13,8 +13,11 @@ metadata:
   # tblPrefix: "Tab."
   # eqnPrefix: "Formel"
 
-variables:
+  codeBlockCaptions: true
 
+highlight-style: pandoc/highlight-style.theme
+
+variables:
   linkcolor: Maroon
   filecolor: Black
   citecolor: Black
