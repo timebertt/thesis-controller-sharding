@@ -97,26 +97,39 @@ The `spec` section contains the user-declared desired state of the object, while
 The API server offers a discovery API (path `/api` and `/apis`) which allows clients to discover available API groups, resources and versions.
 Additionally, this API presents mappings between fully-qualified API kinds -- `GroupVersionKind` -- and their fully-qualified API resources -- `GroupVersionResource`.
 This process is also referred to as "REST mapping" and is used by clients to build the API URL corresponding to the API object they want to interact with.
-I.e. the API URL of a single object is structured like this: [@k8sdesign]
+I.e. the API URL of a given object follows this pattern: [@k8sdesign]
 
 `/<prefix>/<group>/<version>/namespaces/<namespace>/<resource>/<name>`
 
-`prefix` is `/apis`, expect for resources belonging to the `core` API group, which is signified by a missing group in the `apiVersion` field, in which case `prefix` is `/api`.
+`prefix` is `/apis`, except for resources belonging to the `core` API group, which is signified by a missing group in the `apiVersion` field, in which case `prefix` is `/api`.
+
+Resources can have so called subresources, which offer specific actions on a given API object.
+E.g., the `/status` subresource allows to update the `status` section of an object, which enables segregating authorization policies for users and controllers.
+Subresources are available under the API URL of the targeted object, suffixed with the subresource name.
 
 API objects can be requested and manipulated in different API versions, which also describe the maturity level of the API.
-However, the API server stores all objects only once in a predefined API version.
+However, the API server stores all objects only once in a designated API version.
 If a client retrieves or updates objects in a version that is different from their storage version, the API server converts them back and forth.
 Different API versions can thus be considered as different representations of the same API object, which allows guaranteeing backwards-compatibility of the API.
 This is particularly important in the distributed architecture of Kubernetes and allows to evolve and upgrade components independently.
 
 - request types
-- subresources?
-- resource version, concurrency control
+  - get: `GET` w/ name and optionally namespace
+  - list: `GET` w/o name and optionally namespace
+  - watch: `GET` w/o name and `?watch=true`
+  - others irrelevant: create, update, patch, delete, deletecollection
+- resource version, concurrency control [@k8scommunity]
 - watches
-  - shared watch cache on API server to reduce load on etcd
+  - shared watch cache on API server to reduce load on etcd and encoding/decoding effort
   - watch history to allow latency of clients
 - field selectors, label selectors
   - unfiltered requests to etcd, filtered by API server
+  - decrease amount of transferred objects (encoding, decoding, network)
+  - label selector processed for each list item and watch event
+  - field selector
+    - must be supported by API server
+    - watch: optimizes watch event dispatching with index lookup, only trigger interested watchers
+    - list: similar label selector, processed for each list item
 - extension points:
   - custom resources
   - webhooks
