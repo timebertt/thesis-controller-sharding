@@ -47,8 +47,6 @@ This means, users declare the desired state of objects via the respective API re
 Changes to the desired state are accepted instantly without waiting for them to manifest in the system. 
 Controllers pick up the declared specification asynchronously and update the status of API objects while the actual state gradually converges with the desired state.
 
-All API objects contain common metadata and most of them contain desired state (`spec`) and observed state (`status`) as well.
-
 ```yaml
 apiVersion: apps/v1
 kind: Deployment
@@ -81,20 +79,30 @@ status:
 
 : Example API object {#lst:deployment}
 
-- basic building blocks of API objects
-  - Object Metadata, Spec, Status
-  - GroupVersionKind
-  - Namespaces
-  - OwnerReferences / garbage collection?
+\todo[inline]{Caption not working}
+
+All API objects contain common metadata (`apiVersion`, `kind`, `metadata`) describing general object information.
+`apiVersion` and `kind` fully identify the object's type in a given API group and the version it is described in (`GroupVersionKind`).
+This allows clients to discover the corresponding API endpoint from the content of the object itself.
+The `metadata` section contains the object's identifying `name` along with user-defined key-value pairs as `labels` and `annotations`.
+Labels are used for filtering and grouping API objects by certain attributes, while annotations allow adding arbitrary information.
+API objects are grouped by user-created namespaces (specified in `metadata.namespace`), if the respective type is namespace-scoped.
+
+Most API objects also contain `spec` and `status` sections.
+The `spec` section contains the user-declared desired state of the object, while the `status` section contains the state observed by the responsible controller.
+
+\todo[inline]{OwnerReferences / garbage collection?}
 
 ## API Machinery {#sec:apimachinery}
 
-- REST API, request types, subresources
+- REST API, request types
   - GroupVersionResource
+  - API URLs
   - Versioning
     - backwards-compatibility?
     - conversion
   - discovery?
+  - status/scale subresource?
 - resource version, concurrency control
 - watches
   - shared watch cache on API server to reduce load on etcd
