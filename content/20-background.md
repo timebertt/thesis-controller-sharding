@@ -83,7 +83,6 @@ status:
 
 All API objects contain common metadata (`apiVersion`, `kind`, `metadata`) describing general object information.
 `apiVersion` and `kind` fully identify the object's type in a given API group and the version it is described in (`GroupVersionKind`).
-This allows clients to discover the corresponding API endpoint from the content of the object itself.
 The `metadata` section contains the object's identifying `name` along with user-defined key-value pairs as `labels` and `annotations`.
 Labels are used for filtering and grouping API objects by certain attributes, while annotations allow adding arbitrary information.
 API objects are grouped by user-created namespaces (specified in `metadata.namespace`), if the respective type is namespace-scoped.
@@ -95,14 +94,23 @@ The `spec` section contains the user-declared desired state of the object, while
 
 ## API Machinery {#sec:apimachinery}
 
-- REST API, request types
-  - GroupVersionResource
-  - API URLs
-  - Versioning
-    - backwards-compatibility?
-    - conversion
-  - discovery?
-  - status/scale subresource?
+The API server offers a discovery API (path `/api` and `/apis`) which allows clients to discover available API groups, resources and versions.
+Additionally, this API presents mappings between fully-qualified API kinds -- `GroupVersionKind` -- and their fully-qualified API resources -- `GroupVersionResource`.
+This process is also referred to as "REST mapping" and is used by clients to build the API URL corresponding to the API object they want to interact with.
+I.e. the API URL of a single object is structured like this: [@k8sdesign]
+
+`/<prefix>/<group>/<version>/namespaces/<namespace>/<resource>/<name>`
+
+`prefix` is `/apis`, expect for resources belonging to the `core` API group, which is signified by a missing group in the `apiVersion` field, in which case `prefix` is `/api`.
+
+API objects can be requested and manipulated in different API versions, which also describe the maturity level of the API.
+However, the API server stores all objects only once in a predefined API version.
+If a client retrieves or updates objects in a version that is different from their storage version, the API server converts them back and forth.
+Different API versions can thus be considered as different representations of the same API object, which allows guaranteeing backwards-compatibility of the API.
+This is particularly important in the distributed architecture of Kubernetes and allows to evolve and upgrade components independently.
+
+- request types
+- subresources?
 - resource version, concurrency control
 - watches
   - shared watch cache on API server to reduce load on etcd
