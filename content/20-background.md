@@ -103,22 +103,36 @@ I.e. the API URL of a given object follows this pattern: [@k8sdesign]
 
 `prefix` is `/apis`, except for resources belonging to the `core` API group, which is signified by a missing group in the `apiVersion` field, in which case `prefix` is `/api`.
 
-Resources can have so called subresources, which offer specific actions on a given API object.
+Resources can have so-called subresources, which offer specific actions on a given API object.
 E.g., the `/status` subresource allows to update the `status` section of an object, which enables segregating authorization policies for users and controllers.
 Subresources are available under the API URL of the targeted object, suffixed with the subresource name.
 
 API objects can be requested and manipulated in different API versions, which also describe the maturity level of the API.
 However, the API server stores all objects only once in a designated API version.
 If a client retrieves or updates objects in a version that is different from their storage version, the API server converts them back and forth.
-Different API versions can thus be considered as different representations of the same API object, which allows guaranteeing backwards-compatibility of the API.
-This is particularly important in the distributed architecture of Kubernetes and allows to evolve and upgrade components independently.
+Different API versions can thus be considered as different representations of the same API object, which allows Kubernetes to guarantee backwards-compatibility of the API.
+This is particularly important in the distributed architecture of Kubernetes and allows evolving and upgrading components independently.
 
-- request types
-  - get: `GET` w/ name and optionally namespace
-  - list: `GET` w/o name and optionally namespace
-  - watch: `GET` w/o name and `?watch=true`
-  - others irrelevant: create, update, patch, delete, deletecollection
-- resource version, concurrency control [@k8scommunity]
+Requests to API resources have different types -- so-called verbs -- that are identified by the used HTTP verb, path and query parameters.
+`get` requests use HTTP `GET` and a full API URL for retrieving a single object.
+`list` requests are `get` requests but omit the name for retrieving all objects of a given kind in the cluster.
+`list` requests can be restricted to a namespace if the resource is namespace-scoped.
+`list` requests including the query parameter `watch=true` are called `watch` requests, which stream change events for a given kind of objects.
+These verbs are non-mutating, the mutating verbs are: `create`, `update`, `patch`, `delete` and `deletecollection` [@k8sdocs]. 
+Mutating requests are not relevant for this thesis, thus they are not discussed in further detail.
+
+Every Kubernetes object carries a `metadata.resourceVersion` field, which uniquely identifies the object's internal version as stored in etcd.
+All mutating operations change the `resourceVersion` field, allowing clients to detect when an object was changed.
+Currently, the field is backed by the revision that etcd stores as metadata for all keys and returns on all requests.
+Resource versions are represented as strings and must be treated as opaque by clients, i.e., they may only be checked for equality.
+In Kubernetes, the resource version is used for implementing optimistic concurrency control and efficient detection of changes (i.e., watches).
+
+For optimistic concurrency control, clients typically pass the resource version when updating or patching objects as part of a read-modify-write loop.
+With this, the API server checks the given resource version against the resource version of the current object in the store.
+If the values don't match, a concurrent update has been successfully written and the request is denied with `409 Conflict`.
+This is an important mechanism in Kubernetes that prevents controllers and other clients from performing uncoordinated and conflicting changes to API objects [@k8scommunity].
+
+
 - watches
   - shared watch cache on API server to reduce load on etcd and encoding/decoding effort
   - watch history to allow latency of clients
