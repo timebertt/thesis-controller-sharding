@@ -132,22 +132,27 @@ With this, the API server checks the given resource version against the resource
 If the values don't match, a concurrent update has been successfully written and the request is denied with `409 Conflict`.
 This is an important mechanism in Kubernetes that prevents controllers and other clients from performing uncoordinated and conflicting changes to API objects [@k8scommunity].
 
+Watch requests are an important factor for the scalability of Kubernetes.
+Watches are long-lived requests sending notifications for changes to API objects, that clients care about.
+Typically, clients make an initial `list` request for the collection of objects they are interested in and start listening for changes since the retrieved version.
+For this, clients pass the resource version from the retrieved list as a query parameter in the watch request.
+Starting from the specified resource version, the API server sends notifications in form of JSON documents affecting the watched objects with type `ADDED`, `MODIFIED` or `DELETED`.
+The watch mechanism internally relies on etcd's `Watch` service [@etcddocs].
+However, the API server only opens a single watch to etcd per resource type and dispatches events to all watches registered by clients.
+This is done to reduce the request load on etcd and save encoding/decoding effort.
+Additionally, the API server keeps a history of watch events in memory -- the "watch cache" -- allowing clients to lag behind and to catch up with changes since an older resource version [@k8sdocs].
 
-- watches
-  - shared watch cache on API server to reduce load on etcd and encoding/decoding effort
-  - watch history to allow latency of clients
-- field selectors, label selectors
-  - unfiltered requests to etcd, filtered by API server
-  - decrease amount of transferred objects (encoding, decoding, network)
-  - label selector processed for each list item and watch event
-  - field selector
-    - must be supported by API server
-    - watch: optimizes watch event dispatching with index lookup, only trigger interested watchers
-    - list: similar label selector, processed for each list item
-- extension points:
-  - custom resources
-  - webhooks
-  - API aggregation?
+Label selectors are frequently used in Kubernetes to select a group of objects of the same kind based on common attributes stored in form of labels.
+Clients can supply them via the `labelSelector` query parameter on `list` and `watch` requests (as well as `deletecollection`).
+This instructs the API server to return a filtered list of objects that match the given selector, which saves encoding/decoding effort as well as network transfer.
+However, it's important to note that the API server itself issues unfiltered requests to etcd and filters the results in memory before sending the result list back to clients.
+This means, the given label selector is matched on each list item or watch event individually. 
+
+Field selectors are similar to labels selectors but filter by matching individual fields of objects rather than labels, e.g. `Pod.spec.nodeName`.
+However, field selectors cannot be used for selecting arbitrary object fields.
+Instead, they can only be used with specific fields for which the API server supports field selectors.
+For `list` request, field selectors behave similar to label selectors, meaning they are processed for each list item before returning the filtered result to clients.
+Under certain circumstances, field selectors can however decrease processing effort on the API server side for `watch` requests via index lookups.
 
 ## Controllers
 
@@ -158,10 +163,19 @@ This is an important mechanism in Kubernetes that prevents controllers and other
   - concurrent workers
 - actual and desired state of world
 - edge-triggered, level-driven
+  - watch instead of long-pulling
 - leader election
 - implications on resources
   - CPU: encoding, decoding, conversion, actual work
   - memory: caches
   - network: watch connections, API requests
   - on API server side: watch cache, watch connections, etc.
+
+## API Extension
+
+\todo[inline]{check if relevant}
+
+- custom resources
+- webhooks
+- API aggregation?
 - operator pattern: custom resource + controller
