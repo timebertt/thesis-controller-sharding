@@ -154,13 +154,37 @@ Instead, they can only be used with specific fields for which the API server sup
 For `list` request, field selectors behave similar to label selectors, meaning they are processed for each list item before returning the filtered result to clients.
 Under certain circumstances, field selectors can however decrease processing effort on the API server side for `watch` requests via index lookups.
 
+## API Extensions
+
+\todo[inline]{check if relevant}
+
+- CustomResourceDefinition
+- Webhooks
+- API aggregation?
+- operator pattern: custom resource + controller
+
 ## Controllers
 
-- basic building blocks of controllers:
-  - informers, watches, event handlers
-  - caches
-  - queues
-  - concurrent workers
+Kubernetes controllers are composed of the following building blocks: cache, event handlers, workqueue and worker routines.
+Most of them are implemented in libraries, mainly client-go, the official Kubernetes API client for the go programming language.
+Theoretically, controllers can be implemented in any arbitrary programming language.
+However, most controllers use go in order to benefit from the matured and performance-optimized libraries that the official Kubernetes controllers are based on themselves.
+
+![Building Blocks of a Controller [@samplecontroller]](../assets/controller-components.jpeg)
+
+A controller's **cache** is responsible for watching the controller's object type on the API server, inform the controller about changes to them and make the objects available to the controller in memory in form of an indexed store.
+It therefore starts a reflector that lists and watches a given object type as described in section [-@sec:apimachinery].
+The reflector emits corresponding delta events and adds them to a queue.
+An informer then reads these events from the queue and updates changed objects in the store accordingly for later retrieval by the controller.
+The store (indexer) is a flat key-value store with additional indices for increasing performance of lookups with field selectors, that the controller frequently uses, e.g., `metadata.namespace`.
+In addition to saving objects in the store, the informer also distributes notifications to all event handlers registered by the controller.
+Typically, controller caches are shared between all controllers of a single binary in order to reduce processing effort and memory consumption (`SharedIndexInformer`).
+Caches can also be configured to use filtered list and watch requests (e.g., by namespace or label) in order to reduce overhead for processing and storing objects that controllers are not interested in.
+
+- basic building blocks of controllers: [@samplecontroller]
+  - event handlers
+  - workqueue
+  - worker routines
 - actual and desired state of world
 - edge-triggered, level-driven
   - watch instead of long-pulling
@@ -170,12 +194,3 @@ Under certain circumstances, field selectors can however decrease processing eff
   - memory: caches
   - network: watch connections, API requests
   - on API server side: watch cache, watch connections, etc.
-
-## API Extension
-
-\todo[inline]{check if relevant}
-
-- custom resources
-- webhooks
-- API aggregation?
-- operator pattern: custom resource + controller

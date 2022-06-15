@@ -1,6 +1,8 @@
 # Study Thesis on Kubernetes Controller Sharding
 
-[![Build](https://github.com/timebertt/thesis-controller-sharding/actions/workflows/build.yaml/badge.svg)](https://github.com/timebertt/thesis-controller-sharding/actions/workflows/build.yaml)
+[![Build Status](https://github.com/timebertt/thesis-controller-sharding/actions/workflows/build.yaml/badge.svg)](https://github.com/timebertt/thesis-controller-sharding/actions/workflows/build.yaml)
+
+Get the current PDF by clicking the badge above️, navigating to the latest build and downloading the `paper` artifact.
 
 ## Abstract
 
