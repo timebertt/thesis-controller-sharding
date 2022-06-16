@@ -90,7 +90,7 @@ API objects are grouped by user-created namespaces (specified in `metadata.names
 Most API objects also contain `spec` and `status` sections.
 The `spec` section contains the user-declared desired state of the object, while the `status` section contains the state observed by the responsible controller.
 
-\todo[inline]{OwnerReferences / garbage collection?}
+\todo[inline]{OwnerReferences / garbage collection}
 
 ## API Machinery {#sec:apimachinery}
 
@@ -126,6 +126,8 @@ All mutating operations change the `resourceVersion` field, allowing clients to 
 Currently, the field is backed by the revision that etcd stores as metadata for all keys and returns on all requests.
 Resource versions are represented as strings and must be treated as opaque by clients, i.e., they may only be checked for equality.
 In Kubernetes, the resource version is used for implementing optimistic concurrency control and efficient detection of changes (i.e., watches).
+
+\todo[inline]{generation?}
 
 For optimistic concurrency control, clients typically pass the resource version when updating or patching objects as part of a read-modify-write loop.
 With this, the API server checks the given resource version against the resource version of the current object in the store.
@@ -168,7 +170,7 @@ Under certain circumstances, field selectors can however decrease processing eff
 Kubernetes controllers are composed of the following building blocks: cache, event handlers, workqueue and worker routines.
 Most of them are implemented in libraries, mainly client-go, the official Kubernetes API client for the go programming language.
 Theoretically, controllers can be implemented in any arbitrary programming language.
-However, most controllers use go in order to benefit from the matured and performance-optimized libraries that the official Kubernetes controllers are based on themselves.
+However, most controllers use go in order to benefit from the matured and performance-optimized libraries that the official Kubernetes controllers are based on themselves. [@samplecontroller]
 
 ![Building Blocks of a Controller [@samplecontroller]](../assets/controller-components.jpeg)
 
@@ -176,18 +178,44 @@ A controller's **cache** is responsible for watching the controller's object typ
 It therefore starts a reflector that lists and watches a given object type as described in section [-@sec:apimachinery].
 The reflector emits corresponding delta events and adds them to a queue.
 An informer then reads these events from the queue and updates changed objects in the store accordingly for later retrieval by the controller.
-The store (indexer) is a flat key-value store with additional indices for increasing performance of lookups with field selectors, that the controller frequently uses, e.g., `metadata.namespace`.
+The store (indexer) is a flat key-value store with additional indices for increasing performance of namespaced lookups or lookups with field selectors, that the controller frequently uses.
 In addition to saving objects in the store, the informer also distributes notifications to all event handlers registered by the controller.
-Typically, controller caches are shared between all controllers of a single binary in order to reduce processing effort and memory consumption (`SharedIndexInformer`).
+Note, that the store is not a write-trough cache, meaning controllers might read an old version of the object they modified from the cache, until the watch connection received the respective change event.
+
+Controllers can use caches for multiple object types if they work with different kinds of objects during reconciliation or listen for changes to related objects.
+Therefore, controller caches are typically shared between all controllers of a single binary in order to reduce processing effort and memory consumption (`SharedIndexInformer`).
 Caches can also be configured to use filtered list and watch requests (e.g., by namespace or label) in order to reduce overhead for processing and storing objects that controllers are not interested in.
 
-- basic building blocks of controllers: [@samplecontroller]
-  - event handlers
-  - workqueue
-  - worker routines
-- actual and desired state of world
+Controllers add **event handlers** to informers in order to be notified for all important watch events.
+Typically, event handlers perform basic filtering for relevant changes on the changed object to determine whether the controller needs to act on it or not.
+This is done to eliminate unnecessary reconciliation work.
+If work needs to be done on the watched object, event handlers add the object's key (`namespace/name`) to the workqueue.
+However, event handlers don't always enqueue the changed object itself.
+Instead, they might also perform mapping between watched objects and objects that the controller is responsible for.
+For example, the `Job` controller manages `Pods` for carrying out the actual work and adds an `ownerReference` to the owned `Pods`.
+When a `Pod` completes its work, the `Job` controller is notified of the status change via a watch event and enqueues the owning `Job` designated in `Pod.metadata.ownerReferences`.
+
+A controller's **workqueue** centrally keeps track of all keys of objects that the controller needs to perform actions on.
+It decouples event handling and actual reconciliation: controllers might only act upon objects once taken from the queue, but never in event handlers.
+The workqueue also keeps track of all objects that are currently being processed by worker routines.
+It ensures, that a given object key is only picked up by a single worker at a time, even if the key is added to the queue multiple times.
+It only emits a key again once the processing worker has marked the key as processed.
+Furthermore, the workqueue implements multiple mechanisms that are important to the controller's stability and scalability.
+For example, if work on a given object fails because of some error, the object's key is re-queued, so that it is picked up by a worker again.
+The workqueue keeps track of retries and applies an exponential backoff and a jitter in order to break periodicity of the system.
+Additionally, it applies overall and per-item rate limiting to the key emission rate to protect the controller from load spikes.
+
+Eventually, the controller's actual work is carried out by **worker routines**, also referred to as "control loops".
+Note however, that they are not actually looping over a single object as often depicted.
+Instead, they react on relevant changes as notified by the watch connection and pick up a single key from the workqueue at a time.
+Workers mark the key as being processed, retrieve the full object from the cache and finally carry out the actual business logic of the controller.
+If implemented in go, workers run as concurrent goroutines.
+The number of concurrent workers reading from the queue and performing work can be raised in order to increase throughput and decrease wait time.
+
+
 - edge-triggered, level-driven
   - watch instead of long-pulling
+- actual and desired state of world
 - leader election
 - implications on resources
   - CPU: encoding, decoding, conversion, actual work
