@@ -212,11 +212,47 @@ Workers mark the key as being processed, retrieve the full object from the cache
 If implemented in go, workers run as concurrent goroutines.
 The number of concurrent workers reading from the queue and performing work can be raised in order to increase throughput and decrease wait time.
 
+Controllers take the desired state of objects, observe the actual state and perform actions to converge both.
+Generally, controllers need to be level-driven, meaning their actions should be based on observations of the full state independent of any intermediate state changes.
+However, controllers are typically edge-triggered for increasing scalability of the system and reducing unnecessary work and network transfer.
+Therefore, they use API server watches instead of long-pulling.
 
-- edge-triggered, level-driven
-  - watch instead of long-pulling
-- actual and desired state of world
+There might be multiple instances of a single controller binary, e.g., during rolling updates or in HA-setups.
+In order to prevent conflicting actions of multiple instances, one instance is elected to be the active one -- the leader.
+Controllers may only perform reconciliations when the instance is the current leader.
+The leader election mechanism follows a simple protocol based on Kubernetes API objects.
+For this purpose, dedicated `Lease` objects are used, `Endpoints` and `ConfigMaps` were used historically.
+In these objects, a leader election record is persisted ([@lst:lease])\todo{not working}, that states the current leader as well as when the lease has been acquired and for how long it is valid.
+
+```yaml
+apiVersion: coordination.k8s.io/v1
+kind: Lease
+metadata:
+  creationTimestamp: "2022-06-16T08:54:48Z"
+  name: kube-controller-manager
+  namespace: kube-system
+  resourceVersion: "522"
+  uid: 562f1ebe-4da1-4dda-80ce-63b9a50337ab
+spec:
+  acquireTime: "2022-06-16T08:54:48.860913Z"
+  holderIdentity: test-control-plane_2629b027-995b-40fe-991e-7aa3770bb654
+  leaseDurationSeconds: 15
+  leaseTransitions: 0
+  renewTime: "2022-06-16T08:56:17.146876Z"
+```
+
+All instances carry a unique identity, composed of pod name and container ID or any other unique identifier for the instance's process.
+If there currently is no active leader, all instances try to create or update the respective object to specify their identity.
+As the API server denies concurrent writes to the same object, only a single write request can be successful, which determines the elected leader.
+Once a given instance has successfully acquired leadership, it regularly renews its leadership by updating `renewTime`.
+As long as the active leader renews the lease before `leaseDurationSeconds` expires, it continues to perform reconciliations and other instances need to stay in stand-by.
+If however, the leader fails to renew its lease in time (loss of leadership), it must stop performing any actions and a new leader needs to be elected.
+
+: Example Lease Object {#lst:lease}
+
 - leader election
+  - leader election record: lease holder, renew deadline, etc.
+  - active-passive HA
 - implications on resources
   - CPU: encoding, decoding, conversion, actual work
   - memory: caches

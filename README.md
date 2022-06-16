@@ -10,6 +10,6 @@ TBA
 
 ## About
 
-This is a study thesis (half-time thesis) part of my Master studies in Computer Science at the [DHBW Center for Advanced Studies](https://www.cas.dhbw.de/) (CAS).
+This is a study thesis (study project / half-time thesis) part of my Master studies in Computer Science at the [DHBW Center for Advanced Studies](https://www.cas.dhbw.de/) (CAS).
 
 Copyright (c) 2022 Tim Ebert

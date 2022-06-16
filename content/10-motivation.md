@@ -11,7 +11,7 @@ When deploying multiple instances of the same controller, there will only be one
 This is done to prevent controllers from performing uncoordinated and conflicting actions.
 
 If the current leader fails and loses leadership (e.g. network failure, rolling update) another instance takes over leadership and becomes the active instance.
-Such setup can be described as an "active-passive HA-setup".
+Such setup can be described as an "active-passive high-availability (HA) setup".
 It minimizes "controller downtime" and facilitates fast fail-overs.
 However, it cannot be considered as horizontal scaling because work is not distributed or replicated among multiple instances.
 Leadership can be seen as state that Kubernetes controllers carry which prevents from scaling them horizontally.
