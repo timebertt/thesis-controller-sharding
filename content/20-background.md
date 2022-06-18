@@ -241,20 +241,28 @@ spec:
   renewTime: "2022-06-16T08:56:17.146876Z"
 ```
 
+: Example Lease Object {#lst:lease}
+
 All instances carry a unique identity, composed of pod name and container ID or any other unique identifier for the instance's process.
 If there currently is no active leader, all instances try to create or update the respective object to specify their identity.
 As the API server denies concurrent writes to the same object, only a single write request can be successful, which determines the elected leader.
 Once a given instance has successfully acquired leadership, it regularly renews its leadership by updating `renewTime`.
 As long as the active leader renews the lease before `leaseDurationSeconds` expires, it continues to perform reconciliations and other instances need to stay in stand-by.
-If however, the leader fails to renew its lease in time (loss of leadership), it must stop performing any actions and a new leader needs to be elected.
+If however, the leader fails to renew its lease in time (loss of leadership), it must stop performing any actions and a new leader is elected.
+In an HA-setup with multiple instances, this mechanism ensures a fast fail-over in case of losing the active leader.
+However, this effectively prevents scaling controllers horizontally and distributing work across multiple instances.
 
-: Example Lease Object {#lst:lease}
+Because controller work cannot be distributed across multiple instances, capacity and throughput of a controller can only be increased by scaling it vertically, i.e., adding more resources to a single instance.
+Generally, the following resources need to be added to scale controllers vertically:
 
-- leader election
-  - leader election record: lease holder, renew deadline, etc.
-  - active-passive HA
-- implications on resources
-  - CPU: encoding, decoding, conversion, actual work
-  - memory: caches
-  - network: watch connections, API requests
-  - on API server side: watch cache, watch connections, etc.
+- compute: grows with the number of API objects encoded / decoded and reconciled
+- memory: grows with the number of API objects stored in controller caches
+- network transfer: grows with the number of API requests and watch events
+
+This effectively limits the scalability of controllers by available machine sizes and network bandwidth.
+Additionally, scaling controllers increases the resource footprint of the API server and etcd in the following dimensions as well:
+
+- compute: grows with the number of API objects converted, encoded / decoded and with the number of watch events dispatched to clients
+- memory: grows with the number of API objects stored in the watch cache
+- network transfer: grows with the number of API requests and watch events
+- disk I/O: grows with the number of API objects read from and written to disk
