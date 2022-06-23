@@ -1,4 +1,4 @@
-# Sharding in Kubernetes Controllers
+# Design
 
 - transfer ideas from distributed databases
 - distributed scheduling?
@@ -35,36 +35,13 @@
   - controller doesn't only watch controlled object, but also owned objects and dependents
     - restrict watch only possible on namespace basis, but not
 
-## Implementation
+## Sharding Mechanism
 
 - replica discovery
   - membership protocol?
   - gossip between replicas?
   - leases?
-- manifesting sharding decisions
-  - in objects themselves
-  - or in dedicated objects
-    - e.g. if sharded by namespace
-    - otherwise, watches not restrictable
-  - labels
-    - selectable on watch connection
-    - users can remove labels -> should be deterministic / cached
-  - status field
-    - only possible on custom resources you control
-    - needs field selector to be selectable
-    - not supported using CRDs
+- sharding algorithm
 - sharding controller
-  - deployment model: goroutine / sidecar / individual deployment?
+  - manifests sharding decisions
   - populating sharding keys
-- actual controller changes
-  - restrict watches with namespace/label/field selectors
-  - handover?
-
-## Benefits / Applications
-
-- dynamic scaling up and down
-  - e.g. targeted queue wait duration, sharding size, active/idle workers
-  - HPA on custom metrics
-- canary rollout for controllers
-- equally sized controller replicas
-  - easier to right-size / scale vertically

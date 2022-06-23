@@ -1,4 +1,4 @@
-title: Approaches for Kubernetes Controller Sharding
+title: Towards Horizontally Scalable Kubernetes Controllers
 author: Tim Ebert
 company: SAP SE
 email: tim.ebert@sap.com
