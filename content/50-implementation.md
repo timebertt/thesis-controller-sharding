@@ -33,7 +33,7 @@
 - dynamic scaling up and down
   - e.g. targeted queue wait duration, sharding size, active/idle workers
   - HPA on custom metrics
-- canary rollout for controllers
+- canary rollout for controllers (separate deployment per version, number of virtual nodes)
 - equally sized controller replicas
   - easier to right-size / scale vertically
 

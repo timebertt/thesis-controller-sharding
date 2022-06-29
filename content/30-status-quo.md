@@ -21,3 +21,21 @@ Additionally, scaling controllers increases the resource footprint of the API se
 
 - what needs to be done in order to scale controllers horizontally
 - what kind of sharding algorithms are needed
+
+Requirements:
+
+- instances can fail at any time (commodity / cloud-native)
+- balanced distribution even with small number of instances (2, 3)
+- incremental scale-out: increase capacity, throughput with every added instance
+- stable partitioning
+  - minimize needless movement
+  - instances need to be able to discover sharding information after restart
+- fast resharding on replica add/remove, e.g. during rolling updates
+- watches/caches must be restricted (label selector), otherwise we have gained almost nothing
+- no replication allowed
+  - hence, also no consensus between replicas needed
+  - only one instance is allowed to act on any given object
+  - notify controller when object is moved (could be discarded in the light of short reconciliations)
+- instance failure detection, objects should not be blocked for too long
+- outside master that shards is allowed (like Chubby in BigTable)
+  - as long as it does not become single-point of failure
