@@ -1,6 +1,6 @@
-# Experiment
+# Evaluation
 
-## Setup
+## Experiment Setup
 
 - describe measurements
   - resource consumption: CPU, memory
@@ -14,10 +14,11 @@
 - describe experiment process
   - look into kubernetes performance tests
 
-## Execution
+## Results
 
 - execute experiment for different approaches
-
-## Evaluation
-
 - compare approaches by test results
+
+## Discussion
+
+\todo[inline]{Make this top level chapter?}

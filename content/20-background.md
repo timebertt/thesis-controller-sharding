@@ -217,6 +217,8 @@ Generally, controllers need to be level-driven, meaning their actions should be 
 However, controllers are typically edge-triggered for increasing scalability of the system and reducing unnecessary work and network transfer.
 Therefore, they use API server watches instead of long-pulling.
 
+## Leader Election
+
 There might be multiple instances of a single controller binary, e.g., during rolling updates or in HA-setups.
 In order to prevent conflicting actions of multiple instances, one instance is elected to be the active one -- the leader.
 Controllers may only perform reconciliations when the instance is the current leader.
@@ -254,14 +256,41 @@ However, this effectively prevents scaling controllers horizontally and distribu
 
 ## Sharding in Distributed Databases
 
-- background on distributed databases
-- look into Cassandra, MongoDB, CockroachDB, Spanner/F1, ...
-- consensus vs sharding algorithms?
-  - paxos, raft, ...
-- Sharding Criteria
-  - input for sharding algorithms
-  - object / row ID (primary key)
-  - arbitrary sharding key
-  - natural sharding key in product (e.g. workspace, project, etc.)
-- Sharding Algorithms
-  - consistent hashing
+- summarize relevant aspects of Cassandra, BigTable, Dynamo, MongoDB, CockroachDB, Spanner
+- membership mechanism
+  - gossip (Cassandra, CockroachDB)
+    - all nodes are equal, no master needed
+    - nodes announce themselves to the cluster
+    - seed nodes for cluster bootstrapping
+    - failures are detected in all nodes
+  - lease-based (BigTable)
+    - needs store for facilitating leases and locks (Chubby)
+    - nodes announce themselves by acquiring locks in Chubby
+  - other
+    - zonemaster / placement driver continuously talks to spanservers (Spanner)
+- partitioning / sharding algorithms
+  - consistent hashing (Cassandra, Dynamo)
+    - deterministic given data (partitioning key) and cluster members
+    - doesn't need to store data location anywhere
+    - stable partitioning during scale-out/in
+    - virtual nodes (Cassandra): better distribution in small clusters
+  - arbitrary logic (BigTable, MongoDB, CockroachDB, Spanner)
+    - controlled by some form of master
+    - persisted in metadata tables / key ranges
+  - partition key
+    - input for sharding algorithms, can achieve physical co-location of related data
+    - typically, needs to be backed by index
+    - object / row ID, part of primary key
+    - arbitrary sharding key chosen by application developer
+    - could be natural sharding key in product (e.g. workspace, project, etc.)
+- request coordination
+  - all nodes know where data is located and proxy requests because partitioning is deterministic (Cassandra)
+  - clients cache data location from Chubby (BigTable)
+  - proxies cache data location and proxy requests (MongoDB, Spanner)
+  - nodes cache data location and proxy requests (CockroachDB)
+- if replication is done, concurrency control is needed (probably not relevant)
+  - via data versioning (MVCC)
+  - via consensus
+    - paxos (Chubby, Spanner), raft (etcd, CockroachDB, TiDB)
+    - multi-group-paxos/raft (Spanner, CockroachDB, TiDB)
+  - tunable consistency

@@ -1,6 +1,8 @@
 # Status Quo
 
-## Limitations
+\todo[inline]{Call this chapter Research Question?}
+
+## Current Limitations
 
 Because controller work cannot be distributed across multiple instances, capacity and throughput of a controller can only be increased by scaling it vertically, i.e., adding more resources to a single instance.
 Generally, the following resources need to be added to scale controllers vertically:
