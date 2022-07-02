@@ -286,11 +286,15 @@ However, this effectively prevents scaling controllers horizontally and distribu
 - request coordination
   - all nodes know where data is located and proxy requests because partitioning is deterministic (Cassandra)
   - clients cache data location from Chubby (BigTable)
-  - proxies cache data location and proxy requests (MongoDB, Spanner)
-  - nodes cache data location and proxy requests (CockroachDB)
-- if replication is done, concurrency control is needed (probably not relevant)
+  - proxies cache data location from metadata table and proxy requests (MongoDB, Spanner)
+  - nodes cache data location from metadata table and proxy requests (CockroachDB)
+  - no single-point of failure or bottleneck on request path
+- replication
+  - if replication is done, concurrency control is needed (probably not relevant)
   - via data versioning (MVCC)
   - via consensus
     - paxos (Chubby, Spanner), raft (etcd, CockroachDB, TiDB)
     - multi-group-paxos/raft (Spanner, CockroachDB, TiDB)
   - tunable consistency
+- incremental scale-out
+  - linear capacity increase with every added node

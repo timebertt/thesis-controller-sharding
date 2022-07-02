@@ -21,23 +21,35 @@ Additionally, scaling controllers increases the resource footprint of the API se
 
 ## Requirements
 
-- what needs to be done in order to scale controllers horizontally
-- what kind of sharding algorithms are needed
+To scale controllers horizontally, the following is needed:
 
-Requirements:
-
-- instances can fail at any time (commodity / cloud-native)
-- balanced distribution even with small number of instances (2, 3)
-- incremental scale-out: increase capacity, throughput with every added instance
-- stable partitioning
-  - minimize needless movement
+- membership mechanism
+  - instances can fail at any time (commodity / cloud native)
+  - instances are dynamically added and removed (scale-out/in)
+  - instances are replaced during rolling updates
+- partitioning
+  - sharding algorithm, movement
+  - balanced distribution even with small number of instances (2, 3)
+  - objects should not be blocked for too long
+    - stable partitioning desirable, minimize needless movements
+  - fast resharding on voluntary replica add/remove
+  - partition key:
+    - should be applicable to all resources -> sensible default
+    - maybe desirable to co-locate different resources on same instance -> customizable
+- no request coordination needed
+  - no direct communication to controller instances needed 
+  - but assignments need to be propagated to all instances
+  - watches/caches must be restricted (label selector), otherwise we have gained almost nothing
   - instances need to be able to discover sharding information after restart
-- fast resharding on replica add/remove, e.g. during rolling updates
-- watches/caches must be restricted (label selector), otherwise we have gained almost nothing
+  - no single-point of failure or bottleneck
 - no replication allowed
-  - hence, also no consensus between replicas needed
-  - only one instance is allowed to act on any given object
-  - notify controller when object is moved (could be discarded in the light of short reconciliations)
-- instance failure detection, objects should not be blocked for too long
-- outside master that shards is allowed (like Chubby in BigTable)
-  - as long as it does not become single-point of failure
+  - concurrency must be prevented, only one instance is allowed to act on any given object
+  - consistent view on assignments
+  - ensure no split-brain scenarios can happen
+  - when moving objects, controllers need to stop working on it
+- incremental scale-out
+  - linearly increase capacity, throughput with every added instance
+
+Challenges:
+
+- watches might lag behind
