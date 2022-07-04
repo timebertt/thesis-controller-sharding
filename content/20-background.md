@@ -262,36 +262,40 @@ However, this effectively prevents scaling controllers horizontally and distribu
     - all nodes are equal, no master needed
     - nodes announce themselves to the cluster
     - seed nodes for cluster bootstrapping
-    - failures are detected in all nodes
+    - failures are detected by all nodes independently
   - lease-based (BigTable)
-    - needs store for facilitating leases and locks (Chubby)
-    - nodes announce themselves by acquiring locks in Chubby
+    - needs store for facilitating leases and locks: Chubby
+    - servers announce themselves by acquiring locks, delete locks on termination
+    - servers serve data as long as they hold the lock
+    - master periodically asks servers for lock status
+    - on failure, master acquires special lock (for checking if Chubby is live)
+    - if successful, master deletes servers lock
   - other
     - zonemaster / placement driver continuously talks to spanservers (Spanner)
 - partitioning / sharding algorithms
   - consistent hashing (Cassandra, Dynamo)
-    - deterministic given data (partitioning key) and cluster members
+    - deterministic given data (partitioning key) and cluster members' status
     - doesn't need to store data location anywhere
     - stable partitioning during scale-out/in
-    - virtual nodes (Cassandra): better distribution in small clusters
+    - virtual nodes: better distribution in small clusters
   - arbitrary logic (BigTable, MongoDB, CockroachDB, Spanner)
     - controlled by some form of master
     - persisted in metadata tables / key ranges
   - partition key
     - input for sharding algorithms, can achieve physical co-location of related data
     - typically, needs to be backed by index
-    - object / row ID, part of primary key
+    - key / row ID, part of primary key
     - arbitrary sharding key chosen by application developer
     - could be natural sharding key in product (e.g. workspace, project, etc.)
-- request coordination
-  - all nodes know where data is located and proxy requests because partitioning is deterministic (Cassandra)
+- request coordination / assignment
+  - all nodes know where data is located and proxy requests because partitioning is propagated via gossip (Cassandra, Dynamo)
   - clients cache data location from Chubby (BigTable)
   - proxies cache data location from metadata table and proxy requests (MongoDB, Spanner)
   - nodes cache data location from metadata table and proxy requests (CockroachDB)
   - no single-point of failure or bottleneck on request path
 - replication
   - if replication is done, concurrency control is needed (probably not relevant)
-  - via data versioning (MVCC)
+  - via data versioning/MVCC (Cassandra, Dynamo)
   - via consensus
     - paxos (Chubby, Spanner), raft (etcd, CockroachDB, TiDB)
     - multi-group-paxos/raft (Spanner, CockroachDB, TiDB)

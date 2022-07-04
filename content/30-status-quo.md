@@ -1,6 +1,6 @@
 # Status Quo
 
-\todo[inline]{Call this chapter Research Question?}
+\todo[inline]{Call this chapter Research Question or merge with Design?}
 
 ## Current Limitations
 
@@ -27,21 +27,23 @@ To scale controllers horizontally, the following is needed:
   - instances can fail at any time (commodity / cloud native)
   - instances are dynamically added and removed (scale-out/in)
   - instances are replaced during rolling updates
+  - fast resharding on voluntary replica add/remove
 - partitioning
   - sharding algorithm, movement
   - balanced distribution even with small number of instances (2, 3)
   - objects should not be blocked for too long
     - stable partitioning desirable, minimize needless movements
-  - fast resharding on voluntary replica add/remove
   - partition key:
     - should be applicable to all resources -> sensible default
-    - maybe desirable to co-locate different resources on same instance -> customizable
-- no request coordination needed
-  - no direct communication to controller instances needed 
-  - but assignments need to be propagated to all instances
+    - maybe desirable/necessary to co-locate different resources on same instance (e.g. ) -> customizable
+      - discard for this thesis?
+- request coordination / assignment
+  - no direct communication to controller instances needed -> no request coordination from client perspective
+  - instances need to know which objects are assigned to them
+  - instances and clients don't need to know entire mapping
   - watches/caches must be restricted (label selector), otherwise we have gained almost nothing
-  - instances need to be able to discover sharding information after restart
-  - no single-point of failure or bottleneck
+  - instances need to be able to discover assignment information after restart
+  - no single-point of failure or bottleneck for all reconciliations
 - no replication allowed
   - concurrency must be prevented, only one instance is allowed to act on any given object
   - consistent view on assignments
