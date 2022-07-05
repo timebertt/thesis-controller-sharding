@@ -37,11 +37,12 @@
   - consistent hashing for stable assignments and simple (deterministic) logic
   - virtual nodes for balanced distribution in small clusters
     - number of virtual nodes per instance is specified by label on lease
+  - \todo[inline]{make this more specific}
 - partition key:
   - default: by (namespaced) name
   - customizable: by arbitrary shard key?
     - challenge: controller doesn't only watch controlled object, but also owned objects and dependents
-- sharder watches objects (metadata-only) and assigns them to instances
+- sharder watches objects (metadata-only) and assigns them to instances by adding labels
 
 ## Coordination / Object Assignment
 
@@ -60,19 +61,31 @@
 
 ## Preventing Concurrency
 
+- when moving objects
+  - watches might lag behind
+  - sharder can't know if instances already observed the movement
+  - instances need to acknowledge movement and stop working on object accordingly
+  - protocol/flow
+    - on desire to move object: sharder adds "drain" label, indicating that the object should be moved
+    - when controller observes the drain label, it must remove it as well as the shard label, marking the object as unassigned
+    - once sharder observes that object is unassigned, it can be reassigned
+    - if controller doesn't remove the drain label within a given timeout, it is force moved by sharder
+  - makes sure, that controllers have observed movement
+  - facilitates fast movements with ready controllers
 - when moving object from running instances (rebalancing during scale-out):
-  - move all objects belonging to one virtual node in batch
-    - one virtual node at a time to prevent unnecessary movement during rolling updates
-  - objects that should be moved are marked as unassigned
-  - short period of no reconciliation (~15 seconds) between unassigning and reassigning
+  - objects that should be moved are marked as draining
   - objects are reassigned to new instance
   - controllers must ensure they stop working on moved objects within that period
   - challenge: watches might lag behind
+  - alternative: short period of no reconciliation (~15 seconds) between unassigning and reassigning
+  - prevent unnecessary movement during rolling updates (necessary?)
+    - move all objects belonging to one virtual node in batch, one virtual node at a time
 - when moving objects from dead instance (rebalancing after instance failure):
   - challenge: instance could come up again
   - treat similar like running instance
 - when moving objects from terminating instance (rebalancing during scale-down, moving during rolling update):
-  - reassigned immediately
+  - instance deletes its own lease
+  - objects are reassigned immediately
 
 ## Alternatives Considered
 

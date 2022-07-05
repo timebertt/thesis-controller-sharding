@@ -1,6 +1,6 @@
-# Status Quo
+# Requirement Analysis
 
-\todo[inline]{Call this chapter Research Question or merge with Design?}
+- what needs to be done for making controllers horizontally scalable?
 
 ## Current Limitations
 
@@ -44,11 +44,13 @@ To scale controllers horizontally, the following is needed:
   - watches/caches must be restricted (label selector), otherwise we have gained almost nothing
   - instances need to be able to discover assignment information after restart
   - no single-point of failure or bottleneck for all reconciliations
-- no replication allowed
+- no concurrent / distributed reconciliations allowed (no concurrent writes)
+  - "single instance for writes per object"
   - concurrency must be prevented, only one instance is allowed to act on any given object
   - consistent view on assignments
   - ensure no split-brain scenarios can happen
   - when moving objects, controllers need to stop working on it
+  - sharding -> doesn't bring replication per se
 - incremental scale-out
   - linearly increase capacity, throughput with every added instance
 
