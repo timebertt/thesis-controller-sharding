@@ -27,7 +27,7 @@ Additionally, scaling controllers increases the resource footprint of the API se
 To scale controllers horizontally, object ownership and resources mentioned in [@sec:limitations] need to be distributed across multiple instances.
 For this, the following is needed:
 
-- membership mechanism
+- membership mechanism, failure detection
   - instances can fail at any time (commodity / cloud native)
   - instances are dynamically added and removed (scale-out/in)
   - instances are replaced during rolling updates

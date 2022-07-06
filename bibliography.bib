@@ -44,3 +44,36 @@
   url = {https://github.com/kubernetes/sample-controller},
   urldate = {2022-06-15},
 }
+
+@inproceedings{karger1997consistent,
+  author = {Karger, David and Lehman, Eric and Leighton, Tom and Panigrahy, Rina and Levine, Matthew and Lewin, Daniel},
+  title = {Consistent Hashing and Random Trees: Distributed Caching Protocols for Relieving Hot Spots on the World Wide Web},
+  year = {1997},
+  isbn = {0897918886},
+  publisher = {Association for Computing Machinery},
+  address = {New York, NY, USA},
+  url = {https://doi.org/10.1145/258533.258660},
+  doi = {10.1145/258533.258660},
+  booktitle = {Proceedings of the Twenty-Ninth Annual ACM Symposium on Theory of Computing},
+  pages = {654–663},
+  numpages = {10},
+  location = {El Paso, Texas, USA},
+  series = {STOC '97}
+}
+
+@inproceedings{stoica2001chord,
+  author = {Stoica, Ion and Morris, Robert and Karger, David and Kaashoek, M. Frans and Balakrishnan, Hari},
+  title = {Chord: A Scalable Peer-to-Peer Lookup Service for Internet Applications},
+  year = {2001},
+  isbn = {1581134118},
+  publisher = {Association for Computing Machinery},
+  address = {New York, NY, USA},
+  url = {https://doi.org/10.1145/383059.383071},
+  doi = {10.1145/383059.383071},
+  abstract = {A fundamental problem that confronts peer-to-peer applications is to efficiently locate the node that stores a particular data item. This paper presents Chord, a distributed lookup protocol that addresses this problem. Chord provides support for just one operation: given a key, it maps the key onto a node. Data location can be easily implemented on top of Chord by associating a key with each data item, and storing the key/data item pair at the node to which the key maps. Chord adapts efficiently as nodes join and leave the system, and can answer queries even if the system is continuously changing. Results from theoretical analysis, simulations, and experiments show that Chord is scalable, with communication cost and the state maintained by each node scaling logarithmically with the number of Chord nodes.},
+  booktitle = {Proceedings of the 2001 Conference on Applications, Technologies, Architectures, and Protocols for Computer Communications},
+  pages = {149–160},
+  numpages = {12},
+  location = {San Diego, California, USA},
+  series = {SIGCOMM '01}
+}

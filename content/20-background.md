@@ -273,11 +273,11 @@ However, this effectively prevents scaling controllers horizontally and distribu
   - other
     - zonemaster / placement driver continuously talks to spanservers (Spanner)
 - partitioning / sharding algorithms
-  - consistent hashing (Cassandra, Dynamo)
+  - consistent hashing (Cassandra, Dynamo) [@karger1997consistent]
     - deterministic given data (partitioning key) and cluster members' status
     - doesn't need to store data location anywhere
     - stable partitioning during scale-out/in
-    - virtual nodes: better distribution in small clusters
+    - virtual nodes: better distribution in small clusters [@stoica2001chord]
   - arbitrary logic (BigTable, MongoDB, CockroachDB, Spanner)
     - controlled by some form of master
     - persisted in metadata tables / key ranges

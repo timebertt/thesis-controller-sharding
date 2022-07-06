@@ -14,7 +14,7 @@
   - maintains individual lease
   - filtered watch/cache
 
-## Membership
+## Membership and Failure Detection
 
 - similar to BigTable
 - sharder controller performs usual leader election
@@ -59,7 +59,7 @@
   - allow mapping from object to other object, that should be used as partition key
     - e.g., map to controlling object (sensible for most controllers)
 
-## Coordination / Object Assignment
+## Coordination and Object Assignment
 
 - unlike distributed databases
   - no request coordination is needed -> not persisted externally in dedicated store
@@ -96,6 +96,12 @@
 - when moving objects from dead instance (rebalancing after instance failure):
   - after lease expiration (failure detected by sharder), objects are forcefully moved
   - if instance comes up again, objects can be assigned to it again once it renewed its lease
+- alternative: consensus/gossip based concurrency control
+  - make things more complicated: implementation-wise, more communication involved
+  - adds another failure domain: peer-to-peer communication
+- alternative: static hash slots (comparable to Redis) instead of consistent hashing with lease per slot
+  - high overhead for lease updates
+  - doesn't scale, etcd as bottleneck
 - alternative: short period of no reconciliation (~15 seconds) between unassigning and reassigning
   - would need to prevent unnecessary movement during rolling updates
   - e.g., move all objects belonging to one virtual node in batch, one virtual node at a time
