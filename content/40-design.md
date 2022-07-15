@@ -2,7 +2,7 @@
 
 ## Architecture
 
-\todo[inline]{insert drawing}
+![Design Architecture](../assets/design-overview.pdf)
 
 - sharder
   - watch objects (metadata-only)
@@ -29,6 +29,7 @@
 - on termination
   - instance releases its lease
   - sharder moves assigned objects
+  - StatefulSet could be used for stable hostname to minimize movements during rolling updates
 - on failure
   - instance fails to renew its lease within `leaseDurationSeconds`
   - instance needs to stop reconciling objects, terminates as with usual leader election
@@ -77,6 +78,10 @@
 - challenge: multiple controllers in same instance might work on the same object kind, share the same cache by default
   - neglected for now (?)
   - solution: multiple caches with different selectors?
+  - -> future work
+- challenge: relation between objects of same kind
+  - example: scheduler: pod anti affinity
+  - -> future work
 
 ## Preventing Concurrency
 
