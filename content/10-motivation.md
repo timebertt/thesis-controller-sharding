@@ -14,15 +14,13 @@ If the current leader fails and loses leadership (e.g. network failure, rolling 
 Such setup can be described as an "active-passive high-availability (HA) setup".
 It minimizes "controller downtime" and facilitates fast fail-overs.
 However, it cannot be considered as horizontal scaling because work is not distributed or replicated among multiple instances.
-Leadership can be seen as state that Kubernetes controllers carry which prevents from scaling them horizontally.
+Leadership can be seen as state that Kubernetes controllers carry which prevents from scaling them horizontally. \todo{reword this}
 
 This restriction imposes scalability limitations for Kubernetes controllers.
 I.e., the rate of reconciliations, amount of objects, etc. is limited by the machine size that the active controller runs on and the network bandwidth it can use.
-In contrast to usual stateless applications, one cannot increase the throughput of the system by adding more instances (scaling horizontally) but only by using bigger instances (scaling vertically).
+In contrast to usual stateless applications, one cannot increase the capacity and throughput of the system by adding more instances (horizontal scaling) but only by using bigger instances (vertical scaling).
 
 This thesis explores approaches for distributing reconciliation of Kubernetes objects across multiple controller instances.
 It attempts to lift the restriction of having only one active replica per controller.
 For this, mechanisms are required for determining which instance is responsible for which object to prevent conflicting actions.
-The thesis evaluates if and how proven sharding mechanisms from the field of distributed databases can be applied to this problem.
-
-\todo{canary rollout?}
+The thesis evaluates how proven sharding mechanisms from the field of distributed databases can be applied to this problem.

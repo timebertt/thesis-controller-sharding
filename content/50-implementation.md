@@ -27,6 +27,10 @@
 - actual controller changes
   - restrict watches with namespace/label/field selectors
   - handover?
+- sharding of owned objects is only eventually consistent
+  - could lead to problems?
+  - owned object assigned later than owner
+  - owner is drained, owned object immediately reassigned
 
 ## Benefits / Applications
 

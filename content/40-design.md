@@ -11,7 +11,7 @@
   - add labels to objects according to instance assignments
 - instances
   - instance ID = hostname
-  - maintains individual lease
+  - maintain individual lease
   - filtered watch/cache
 
 ## Membership and Failure Detection
@@ -24,24 +24,22 @@
   - holder identity needs to be stable as well, otherwise restart is similar to instance not able to renew its lease -> minimize movements
 - sharder watches leases
 - as long as instance holds its lease
-  - sharder considers it ready and assigns objects to it
+  - sharder considers it "ready" and assigns objects to it
   - instance watches and controls objects labelled with its ID
 - on termination
   - instance releases its lease
-  - sharder moves assigned objects
-  - StatefulSet could be used for stable hostname to minimize movements during rolling updates
+  - sharder considers instances as "dead", moves assigned objects
+  - idea: StatefulSet could be used for stable hostname to minimize movements during rolling updates
 - on failure
   - instance fails to renew its lease within `leaseDurationSeconds`
   - instance needs to stop reconciling objects, terminates as with usual leader election
-  - sharder considers instance as "unknown", waits for another `leaseDurationSeconds`
+  - sharder considers instance as "expired", waits for another `leaseDurationSeconds`
   - if instance comes up again and renews its lease, sharder considers instance as ready again
-  - if instance still doesn't renew lease within timeout, sharder tries to acquire instance lease once (to ensure API server availability/connectivity) with double `leaseDurationSeconds`
-  - if successful, instance is considered dead, sharder moves assigned objects
+  - if instance still doesn't renew lease within timeout, sharder consideres instance as "uncertain" and tries to acquire instance lease once (to ensure API server availability/connectivity) with double `leaseDurationSeconds`
+  - if successful, instance is considered "dead", sharder moves assigned objects
   - instance is free to re-acquire lease once it comes up again after lease has expired
-  - if successful, instance is considered ready again
-- cleanup expired / orphaned leases
-  - either: sharder cleans up expired leases once `renewTime + 10 * leaseDurationSeconds` has passed
-  - or: instances add `Pod` as `ownerReference` to `Lease` -> rely on garbage collection
+  - if successful, instance is considered "ready" again
+- sharder cleans up "dead" leases after 1 minute ("orphaned")
 
 ## Partitioning
 
@@ -49,11 +47,10 @@
 - sharding algorithm:
   - consistent hashing for stable assignments and simple (deterministic) logic
   - virtual nodes for balanced distribution in small clusters
-    - number of virtual nodes per instance is specified by label on lease
-  - \todo[inline]{make this more specific}
+    - number of virtual nodes per instance is specified by label on lease -> future work
   - every object is assigned to exactly one instance
 - partition key:
-  - default: by `GroupKind` + namespaced name
+  - default: by `GroupKind` + namespaced name + uid
     - done in order to distribute objects of different kind with identical names
   - challenge: controller doesn't only watch controlled object, but also controlled objects and dependents
   - owner and owned object need to have identical partition key, so they are assigned to same instance
@@ -65,14 +62,14 @@
 - unlike distributed databases
   - no request coordination is needed -> not persisted externally in dedicated store
   - assignment information not needed by all instances -> not propagating via gossip
-- sharder ("meta controller") assigns objects to instances
+- sharder assigns objects to instances
   - adds labels to objects
 - instances need to know which objects are assigned to them:
   - labels used for filtered watches
   - makes use of already existing watches in controllers, only need to add label selector
   - once labels are persisted in etcd, no additional coordination is needed -- sharder is not on the critical path for all reconciliations
   - controllers simply rebuild filtered watches after restart
-- objects are not assigned when sharder stops working (should recover quickly though)
+- objects are not assigned when sharder stops working (should recover quickly via active-passive HA though)
 - challenge: labels must not be mutated by user
   - can be prevented via validating webhook
 - challenge: multiple controllers in same instance might work on the same object kind, share the same cache by default
@@ -93,11 +90,11 @@
     - on desire to move object: sharder adds "drain" label, indicating that the object should be moved
     - when controller observes the drain label, it must remove it as well as the shard label, marking the object as drained/unassigned
     - once sharder observes that object is drained, it can be reassigned
-    - if controller doesn't remove the drain label within a given timeout, it is forcefully moved by sharder
+    - if controller doesn't remove the drain label, sharder removes it forcefully when instance gets unavailable
   - facilitates fast movements with ready instances
 - when moving objects from terminating instance (rebalancing during scale-down, moving during rolling update):
   - instance releases its own lease
-  - objects are reassigned immediately
+  - objects are reassigned immediately, sharder skips drain operation
 - when moving objects from dead instance (rebalancing after instance failure):
   - after lease expiration (failure detected by sharder), objects are forcefully moved
   - if instance comes up again, objects can be assigned to it again once it renewed its lease

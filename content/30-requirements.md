@@ -1,6 +1,7 @@
 # Requirement Analysis
 
-- what needs to be done for making controllers horizontally scalable?
+First, this chapter describes what the current limitations in scaling Kubernetes controllers are.
+Afterwards, it analyzes what is required to make Kubernetes controllers horizontally scalable.
 
 ## Current Limitations {#sec:limitations}
 
