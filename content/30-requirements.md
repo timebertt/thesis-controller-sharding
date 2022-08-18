@@ -1,29 +1,60 @@
 # Requirement Analysis
 
-First, this chapter describes what the current limitations in scaling Kubernetes controllers are.
+Based on the motivation for this study project and the described background, this chapter first describes what the current limitations in scaling Kubernetes controllers are.
 Afterwards, it analyzes what is required to make Kubernetes controllers horizontally scalable.
 
-## Current Limitations {#sec:limitations}
+## Current Scalability Limitations {#sec:limitations}
 
-- leader election prevents scaling horizontally
-- list resources that are most important for controllers / relevant for scaling
+Kubernetes controllers need to prevent uncoordinated and conflicting actions from different instances on the same API objects.
+Therefore, controllers currently use leader election mechanisms to determine a single active instance at any given time.
+Even if multiple instances are running at the same time, there will only be a single instance carrying out work -- the current leader.
+This means, that a controller's work cannot be distributed across multiple controller instances.
+Because of this, capacity and throughput of a controller can only be increased by scaling it vertically, i.e., adding more resources to the instances.
+However, one cannot increase capacity or throughput by adding more controller instances.
+I.e., as of now, Kubernetes controllers are not horizontally scalable.
 
-Because controller work cannot be distributed across multiple instances, capacity and throughput of a controller can only be increased by scaling it vertically, i.e., adding more resources to a single instance.
-Generally, the following resources need to be added to scale controllers vertically:
+In order to understand what is required for scaling Kubernetes controllers horizontally, it's important to note which resource dimensions are relevant for scaling.
+Generally speaking, the following resource requirements increase with the controller's capacity and throughput:
 
-- compute: grows with the number of API objects encoded / decoded and reconciled
-- memory: grows with the number of API objects stored in controller caches
-- network transfer: grows with the number of API requests and watch events
++------------------+------------------------------------------------------------+
+| resource         | depends on                                                 |
++==================+============================================================+
+| compute          | rate and size of API objects encoded, decoded;             |
+|                  | rate and CPU consumption of actual reconciliations         |
++------------------+------------------------------------------------------------+
+| memory           | number of API objects stored in the controller's caches    |
++------------------+------------------------------------------------------------+
+| network transfer | rate and size of API requests and watch events             |
++------------------+------------------------------------------------------------+
 
-This effectively limits the scalability of controllers by available machine sizes and network bandwidth.
+: Resource requirements of a Kubernetes controller
+
+As controllers can only be scaled by deploying larger instances, this effectively limits their scalability by the available machine sizes and network bandwidth.
+Note, that using bigger machines and broader network connections typically has negative impact on cost-efficiency at the rear end of the spectrum.
+Hence, it is desirable to make controllers horizontally scalable and rather distribute multiple instances across smaller machines instead of deploying bigger instances.
+\todo[inline]{move this to motivation?}
+
 Additionally, scaling controllers increases the resource footprint of the API server and etcd in the following dimensions as well:
 
-- compute: grows with the number of API objects converted, encoded / decoded and with the number of watch events dispatched to clients
-- memory: grows with the number of API objects stored in the watch cache
-- network transfer: grows with the number of API requests and watch events
-- disk I/O: grows with the number of API objects read from and written to disk
++------------------+------------------------------------------------------------+
+| resource         | depends on                                                 |
++==================+============================================================+
+| compute          | rate and size of API objects converted, encoded, decoded;  |
+|                  | rate and size of watch events dispatched to clients        |
++------------------+------------------------------------------------------------+
+| memory           | number of API objects stored in the watch cache            |
++------------------+------------------------------------------------------------+
+| network transfer | rate and size of API requests and watch events             |
++------------------+------------------------------------------------------------+
+| disk I/O         | rate and size of API objects read from and written to disk |
++------------------+------------------------------------------------------------+
 
-## Requirements
+: Resource implications on API server and etcd
+
+However, this study project focuses on scalability of the controller-side only.
+Scalability limitations and implications of the control plane is out of scope of this thesis.
+
+## Requirements for Horizontal Scalability
 
 To scale controllers horizontally, object ownership and resources mentioned in [@sec:limitations] need to be distributed across multiple instances.
 For this, the following is needed:
