@@ -16,6 +16,7 @@
 
 ## Membership and Failure Detection
 
+- addresses [requirement @sec:req-membership]
 - similar to BigTable
 - sharder controller performs usual leader election
 - individual leases per instance
