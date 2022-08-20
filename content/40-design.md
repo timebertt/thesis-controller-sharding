@@ -83,6 +83,10 @@
 
 ## Preventing Concurrency
 
+- concurrency generally prevented as long as assignments do not change
+- however, concurrency needs to be prevented when moving objects
+- old instance needs to stop working on moved objects before new instance picks up objects
+
 - when moving objects from ready instance (rebalancing during scale-out, movement during rolling update):
   - challenge: system is pull/watch-based (no request routing), watches/caches might lag behind
   - sharder can't know if instances already observed the movement

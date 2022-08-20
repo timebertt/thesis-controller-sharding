@@ -19,10 +19,12 @@ Generally speaking, the following resource requirements increase with the contro
 +------------------+------------------------------------------------------------+
 | resource         | depends on                                                 |
 +==================+============================================================+
-| compute          | rate and size of API objects encoded, decoded;             |
+| compute          | rate and size of API objects encoded, decoded              |
+|                  | (API requests and watch events),                           |
 |                  | rate and CPU consumption of actual reconciliations         |
 +------------------+------------------------------------------------------------+
-| memory           | number of API objects stored in the controller's caches    |
+| memory           | number and size of API objects stored in the controller's  |
+|                  | caches                                                     |
 +------------------+------------------------------------------------------------+
 | network transfer | rate and size of API requests and watch events             |
 +------------------+------------------------------------------------------------+
@@ -42,7 +44,7 @@ Additionally, scaling controllers increases the resource footprint of the API se
 | compute          | rate and size of API objects converted, encoded, decoded;  |
 |                  | rate and size of watch events dispatched to clients        |
 +------------------+------------------------------------------------------------+
-| memory           | number of API objects stored in the watch cache            |
+| memory           | number and size of API objects stored in the watch cache   |
 +------------------+------------------------------------------------------------+
 | network transfer | rate and size of API requests and watch events             |
 +------------------+------------------------------------------------------------+
@@ -72,7 +74,7 @@ In order to distribute object ownership across instances, there must be mechanis
 Additionally, this mechanism needs to provide information on the availability of individual instances.
 Instance failures need to be detected in order to remediate them and restore functionality of the system quickly and automatically.
 
-Because Kubernetes controllers are part of a distributed system and deployed in cloud environments (on commodity hardware), the sharding mechanism must expect that instances can fail at any time.
+Because Kubernetes controllers are part of a distributed system and deployed in cloud environments (on commodity hardware), the sharding mechanism must expect that instances can be restarted or fail at any time.
 Also, instances can be dynamically added or removed to adapt to growing or decreasing demand.
 Furthermore, instances will typically be replaced in quick succession during rolling updates.
 For these reasons, it is desirable to handle voluntary disruption specifically (scale-down, rolling updates) to achieve fast rebalancing.
@@ -95,29 +97,34 @@ Hence, the mapping from object to its partition key needs to be customizable.
 
 ### Requirement 3: Coordination and Object Assignment {#sec:req-coordination}
 
-- objects should not be blocked for too long during normal operations, minimize time-intensive movements
-- no direct communication to controller instances needed -> no request coordination from client perspective
-- instances need to know which objects are assigned to them
-- instances and clients don't need to know entire mapping
-- watches/caches must be restricted (label selector), otherwise we have gained almost nothing
-- instances need to be able to discover assignment information after restart
-- no single-point of failure or bottleneck for all reconciliations
+Next, the sharding mechanism must provide some form of coordination between individual controller instances and assign API objects to the instances based on the partitioning results.
+As Kubernetes controllers realize the desired state of the system asynchronously, there is no direct communication between the user issuing an intent and the controller acting on the intent.
+Hence, there is no need for partition-based coordination of client requests.
+Individual controller instances need to know which objects are assigned to them in order to perform the necessary reconciliations.
+However, individual instances don't need to be aware of the assignment of all API objects.
+
+As described in [@tbl:scaling-resources], the resource requirements of Kubernetes controllers don't only depend on the actual reconciliations but even more significantly depend on the controllers' caches and underlying watch connections.
+The sharding mechanism can only make controllers horizontally scalable, if the instances' caches and watch connections are filtered to only contain and transport the API objects that are assigned to the respective instances.
+Otherwise, the mechanism would only replicate the cache and thereby resource requirements which contradicts the main goals of distributing load between instances.
+
+Another important requirement is that individual instances need to be able to retrieve the object assignment information after restarts.
+I.e., object assignments must be stored in a persistent manner.
+
+Furthermore, there must not be a single-point of failure or bottleneck for reconciliations.
+This means, the sharding mechanism must not add additional points of failure on the critical path of API requests and the reconciliations themselves, which limit the mechanism's scalability again.
+During normal operation, reconciliations should not be blocked for a longer period of time.
 
 ### Requirement 4: Preventing Concurrency {#sec:req-concurrency}
 
-- no concurrent / distributed reconciliations for a single object allowed (no concurrent writes / no split-brain scenarios)
-- only a single instance is allowed to make mutations to a given object
-- strictly consistent view on assignments is not needed
-  - however, multiple instance must not feel responsible for a single object simultaneously
-- generally, simple sharding, no replication involved: all objects are assigned to a single instance
-- concurrency generally prevented as long as assignments do not change
-- however, concurrency needs to be prevented when moving objects
-- old instance needs to stop working on moved objects before new instance picks up objects
+Additionally, even when object ownership is distributed across multiple controller instances, it's important that concurrent reconciliations for a single object in different instances are still not allowed.
+I.e., the purpose of the current leader election mechanism must still not be violated.
+Only a single instance is allowed to perform mutations on a given object at any given time.
+A strictly consistent view on object assignments is not needed for this, however.
+The only requirement is, that multiple controller instances must not perform writing actions for a single object concurrently.
+In other words, the wanted sharding mechanism must not involve replication of objects.
+All API objects are only assigned to a single instance.
 
 ### Requirement 5: Incremental Scale-Out {#sec:req-scale-out}
 
-- linearly increase capacity and throughput with every added instance
-
-Challenges:
-
-- watches might lag behind
+The final requirement is that the introduced sharding mechanism provides incremental scale-out properties.
+This means, that the capacity and throughput of the system increases almost linearly with the added resources, i.e. with every added controller instance.
