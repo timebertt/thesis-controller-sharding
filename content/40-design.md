@@ -29,24 +29,28 @@ The sharded controllers watch and cache only the objects they are responsible fo
 
 ## Membership and Failure Detection
 
-- addresses [requirement @sec:req-membership]
-- similar to BigTable
-- sharder controller performs usual leader election
-- individual leases per instance
-  - name = holder identity = instance ID = hostname
-  - name needs to be stable between restarts to allow restarts of instances (can fail at any time)
-  - holder identity needs to be stable as well, otherwise restart is similar to instance not able to renew its lease -> minimize movements
+To address [requirement @sec:req-membership], a lease-based membership and failure detection mechanism is used.
+The mechanism is heavily inspired by Bigtable [@bigtable2006] but adapted to use Kubernetes `Lease` objects stored in etcd instead of leases stored in Chubby [@chubby2006].
+
+The sharder performs usual leader election to ensure that there is only one active sharder at any given time.
+Additionally, each shard maintains an individual shard lease.
+Like usual leader election, it uses the `Lease` API resource including the same fields and semantics.
+However, shard leases use individual names that are equal to the shard's instance ID.
+The instance ID needs to be stable between restarts of the shard, so the hostname is used, i.e. the controller's Pod name.
+On startup, the shards acquire the respective shard lease using the instance ID as name and holder identity.
+As with usual leader election, the shards periodically renew their leases after a configured duration.
+As long as the shard actively holds its lease, it watches and reconciles objects that are assigned to itself.
+If the shard fails to renew its lease within a configured period, it needs to stop all sharded controllers immediately and terminate.
+
 - sharder watches leases
 - as long as instance holds its lease
   - sharder considers it "ready" and assigns objects to it
-  - instance watches and controls objects labelled with its ID
 - on termination
   - instance releases its lease
   - sharder considers instances as "dead", moves assigned objects
   - idea: StatefulSet could be used for stable hostname to minimize movements during rolling updates
 - on failure
   - instance fails to renew its lease within `leaseDurationSeconds`
-  - instance needs to stop reconciling objects, terminates as with usual leader election
   - sharder considers instance as "expired", waits for another `leaseDurationSeconds`
   - if instance comes up again and renews its lease, sharder considers instance as ready again
   - if instance still doesn't renew lease within timeout, sharder consideres instance as "uncertain" and tries to acquire instance lease once (to ensure API server availability/connectivity) with double `leaseDurationSeconds`

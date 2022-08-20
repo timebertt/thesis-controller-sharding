@@ -256,14 +256,14 @@ However, this effectively prevents scaling controllers horizontally and distribu
 
 ## Sharding in Distributed Databases
 
-- summarize relevant aspects of Cassandra, BigTable, Dynamo, MongoDB, CockroachDB, Spanner
+- summarize relevant aspects of Cassandra, Bigtable, Dynamo, MongoDB, CockroachDB, Spanner
 - membership mechanism
   - gossip (Cassandra, CockroachDB)
     - all nodes are equal, no master needed
     - nodes announce themselves to the cluster
     - seed nodes for cluster bootstrapping
     - failures are detected by all nodes independently
-  - lease-based (BigTable)
+  - lease-based (Bigtable)
     - needs store for facilitating leases and locks: Chubby
     - servers announce themselves by acquiring locks, delete locks on termination
     - servers serve data as long as they hold the lock
@@ -278,7 +278,7 @@ However, this effectively prevents scaling controllers horizontally and distribu
     - doesn't need to store data location anywhere
     - stable partitioning during scale-out/in
     - virtual nodes: better distribution in small clusters [@stoica2001chord]
-  - arbitrary logic (BigTable, MongoDB, CockroachDB, Spanner)
+  - arbitrary logic (Bigtable, MongoDB, CockroachDB, Spanner)
     - controlled by some form of master
     - persisted in metadata tables / key ranges
   - partition key
@@ -289,7 +289,7 @@ However, this effectively prevents scaling controllers horizontally and distribu
     - could be natural sharding key in product (e.g. workspace, project, etc.)
 - request coordination / assignment
   - all nodes know where data is located and proxy requests because partitioning is propagated via gossip (Cassandra, Dynamo)
-  - clients cache data location from Chubby (BigTable)
+  - clients cache data location from Chubby (Bigtable)
   - proxies cache data location from metadata table and proxy requests (MongoDB, Spanner)
   - nodes cache data location from metadata table and proxy requests (CockroachDB)
   - no single-point of failure or bottleneck on request path
