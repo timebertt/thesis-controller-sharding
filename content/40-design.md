@@ -1,18 +1,31 @@
 # Design
 
+This chapter presents a design for implementing sharding in Kubernetes controllers to make them horizontally scalable.
+The presented design includes well-known approaches for sharding in distributed databases and applies them to the problem in Kubernetes controllers.
+Approaches are chosen to fulfill the requirements in [@sec:requirements].
+First, the overall architecture of the design is introduced.
+After that, different aspects of the design are described in detail.
+
 ## Architecture
 
-![Design Architecture](../assets/design-overview.pdf)
+![Kubernetes controller sharding architecture](../assets/design-overview.pdf)
 
-- sharder
-  - watch objects (metadata-only)
-  - watch instances (leases)
-  - determines assignments
-  - add labels to objects according to instance assignments
-- instances
-  - instance ID = hostname
-  - maintain individual lease
-  - filtered watch/cache
+The design architecture heavily builds upon existing mechanisms of the Kubernetes API and controllers.
+It reuses established approaches from distributed databases and maps them to Kubernetes in a way that sharding is accomplished in a "Kubernetes-native" manner in order to leverage as much of the existing controller infrastructure as possible.
+
+Firstly, multiple instances of a single controller are deployed with the same configuration.
+All instances are equal, though they are differentiated by a unique instance ID.
+In addition to the usual controllers, a new controller is added to all instances: the sharder.
+The sharder is a controller that reconciles API objects of a given kind and assigns them to the individual controller instances.
+It persists object assignments by setting the `shard` label on the objects themselves to the ID of the responsible instance.
+As the sharder itself is responsible for mutating all API objects of a given kind, it must run under the usual leader election.
+I.e., there is only a single active sharder at any given time and additional sharder instances are in stand-by.
+The sharder itself watches and caches all API objects of the sharded kind.
+However, it uses a metadata-only watch to minimize the resulting resource usage.
+
+Each controller instance ("shard") maintains an individual lease ("shard lease"), which is used as a heartbeat resource to inform the sharder about the health status of all instances.
+The sharder watches the shard leases in addition to the sharded API objects themselves in order to react on state changes, e.g., addition or removal of shards.
+The sharded controllers watch and cache only the objects they are responsible for by filtering the watch/cache using a label selector on the `shard` label.
 
 ## Membership and Failure Detection
 
@@ -20,7 +33,7 @@
 - similar to BigTable
 - sharder controller performs usual leader election
 - individual leases per instance
-  - name = holder identity = instance ID
+  - name = holder identity = instance ID = hostname
   - name needs to be stable between restarts to allow restarts of instances (can fail at any time)
   - holder identity needs to be stable as well, otherwise restart is similar to instance not able to renew its lease -> minimize movements
 - sharder watches leases

@@ -1,4 +1,4 @@
-# Requirement Analysis
+# Requirement Analysis {#sec:requirement-analysis}
 
 Based on the motivation for this study project and the described background, this chapter first describes what the current limitations in scaling Kubernetes controllers are.
 Afterwards, it analyzes what is required to make Kubernetes controllers horizontally scalable.
@@ -56,7 +56,7 @@ Additionally, scaling controllers increases the resource footprint of the API se
 However, this study project focuses on scalability of the controller-side only.
 Scalability limitations and implications of the control plane is out of scope of this thesis.
 
-## Requirements for Horizontal Scalability
+## Requirements for Horizontal Scalability {#sec:requirements}
 
 To scale Kubernetes controllers horizontally the restriction of having only a single active instance at any given time needs to be lifted.
 For this, a concept of sharding for API objects must be introduced which distributes ownership of different objects across multiple instances.
