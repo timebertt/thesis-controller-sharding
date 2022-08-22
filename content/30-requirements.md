@@ -82,7 +82,7 @@ For these reasons, it is desirable to handle voluntary disruption specifically (
 ### Requirement 2: Partitioning {#sec:req-partitioning}
 
 Secondly, the sharding mechanism must include a partitioning algorithm for determining ownership of a given object based on information about the set of available controller instances.
-Partitioning results need to be transparent and not change any existing API semantics.
+It must map every sharded API object to exactly one instance.
 Additionally, the partitioning algorithm needs to provide a balanced distribution even with a small number of instances (e.g. less than 5).
 
 As an input for the partitioning algorithm, a partition key is needed.
@@ -102,6 +102,7 @@ As Kubernetes controllers realize the desired state of the system asynchronously
 Hence, there is no need for partition-based coordination of client requests.
 Individual controller instances need to know which objects are assigned to them in order to perform the necessary reconciliations.
 However, individual instances don't need to be aware of the assignment of all API objects.
+Object assignment needs to be transparent and must not change any existing API semantics.
 
 As described in [@tbl:scaling-resources], the resource requirements of Kubernetes controllers don't only depend on the actual reconciliations but even more significantly depend on the controllers' caches and underlying watch connections.
 The sharding mechanism can only make controllers horizontally scalable, if the instances' caches and watch connections are filtered to only contain and transport the API objects that are assigned to the respective instances.

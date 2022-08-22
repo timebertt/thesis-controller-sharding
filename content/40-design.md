@@ -27,7 +27,7 @@ Each controller instance ("shard") maintains an individual lease ("shard lease")
 The sharder watches the shard leases in addition to the sharded API objects themselves in order to react on state changes, e.g., addition or removal of shards.
 The sharded controllers watch and cache only the objects they are responsible for by filtering the watch/cache using a label selector on the `shard` label.
 
-## Membership and Failure Detection
+## Membership and Failure Detection {#sec:des-membership}
 
 To address [requirement @sec:req-membership], a lease-based membership and failure detection mechanism is used.
 The mechanism is heavily inspired by Bigtable [@bigtable2006] but adapted to use Kubernetes `Lease` objects stored in etcd instead of leases stored in Chubby [@chubby2006].
@@ -65,19 +65,21 @@ With this, leases of voluntarily terminated instances as well as failed instance
 
 ## Partitioning
 
-- similar to Cassandra, Dynamo
-- sharding algorithm:
-  - consistent hashing for stable assignments and simple (deterministic) logic
-  - virtual nodes for balanced distribution in small clusters
-    - number of virtual nodes per instance is specified by label on lease -> future work
-  - every object is assigned to exactly one instance
-- partition key:
-  - default: by `GroupKind` + namespaced name + uid
-    - done in order to distribute objects of different kind with identical names
-  - challenge: controller doesn't only watch controlled object, but also controlled objects and dependents
-  - owner and owned object need to have identical partition key, so they are assigned to same instance
-  - allow mapping from object to other object, that should be used as partition key
-    - e.g., map to controlling object (sensible for most controllers)
+To address [requirement @sec:req-partitioning], a variant of consistent hashing is used as described in [@karger1997consistent; @stoica2001chord].
+With this, partitioning is done similarly as in Apache Cassandra [@cassandradocs] and Amazon Dynamo [@dynamo2007] but adapted to use Kubernetes API object metadata as input.
+Consistent hashing is chosen because it minimizes movement on addition and removal of instances.
+Also, it provides a simple and deterministic algorithm for determining the responsible shard solely based on the set of available instances.
+Therefore, no state of the partitioning algorithm must be stored apart from the instance states available through the membership mechanism ([@sec:des-membership]).
+The sharder can simply reconstruct the hash ring based on this information after a restart or leader transition without risking inconsistency or unstable assignments.
+In order to provide a balanced distribution even with a small number of instances, every instance ID is mapped to a preconfigured number of tokens on the hash ring -- known as "virtual nodes" [@stoica2001chord].
+
+For determining ownership of a given API object, a partition key is derived from the object's metadata.
+By default, it consists of the object's API group, kind, namespace and name.
+This partition key is chosen in order to equally distribute objects of different kinds with the same namespace and name across shards.
+Additionally, the object's UID is added in order to distinguish between different instances of an API object with the same namespace and name.
+As all API objects share these common metadata fields, this approach can be applied to all API resources equally.
+Also, it allows the sharder to use lightweight metadata-only watches.
+In order to assign owned objects to the same shard as their owners, the owner's partition key can be determined from the owner reference in the owned object's metadata.
 
 ## Coordination and Object Assignment
 
