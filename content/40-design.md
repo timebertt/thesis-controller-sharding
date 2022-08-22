@@ -34,7 +34,7 @@ The mechanism is heavily inspired by Bigtable [@bigtable2006] but adapted to use
 
 The sharder performs usual leader election to ensure that there is only one active sharder at any given time.
 Additionally, each shard maintains an individual shard lease.
-Like usual leader election, it uses the `Lease` API resource including the same fields and semantics.
+Like usual leader election, the `Lease` API resource with the same fields and semantics is used for this purpose.
 However, shard leases use individual names that are equal to the shard's instance ID.
 The instance ID needs to be stable between restarts of the shard, so the hostname is used, i.e. the controller's Pod name.
 On startup, the shards acquire the respective shard lease using the instance ID as name and holder identity.
@@ -42,22 +42,26 @@ As with usual leader election, the shards periodically renew their leases after 
 As long as the shard actively holds its lease, it watches and reconciles objects that are assigned to itself.
 If the shard fails to renew its lease within a configured period, it needs to stop all sharded controllers immediately and terminate.
 
-- sharder watches leases
-- as long as instance holds its lease
-  - sharder considers it "ready" and assigns objects to it
-- on termination
-  - instance releases its lease
-  - sharder considers instances as "dead", moves assigned objects
-  - idea: StatefulSet could be used for stable hostname to minimize movements during rolling updates
-- on failure
-  - instance fails to renew its lease within `leaseDurationSeconds`
-  - sharder considers instance as "expired", waits for another `leaseDurationSeconds`
-  - if instance comes up again and renews its lease, sharder considers instance as ready again
-  - if instance still doesn't renew lease within timeout, sharder consideres instance as "uncertain" and tries to acquire instance lease once (to ensure API server availability/connectivity) with double `leaseDurationSeconds`
-  - if successful, instance is considered "dead", sharder moves assigned objects
-  - instance is free to re-acquire lease once it comes up again after lease has expired
-  - if successful, instance is considered "ready" again
-- sharder cleans up "dead" leases after 1 minute ("orphaned")
+The sharder controller watches all shard leases, which allows it to discover all available instances and immediately react to state changes.
+As long as a shard holds its lease, the sharder considers it for partitioning.
+On shard termination, the shard unsets the lease's holder identity field to release its lease.
+This signals a voluntary disruption to the sharder, which immediately removes the instance from the partitioning.
+With this, all objects assigned to the terminated shard are moved to other available instances.
+
+Shard failures are detected by checking the leases' `renewTimestamp` field.
+If a shard fails to renew its lease within `leaseDurationSeconds`, the lease is considered expired.
+To decrease sensitivity of the system, the sharder waits for another `leaseDurationSeconds` and allows the instance to renew its lease again.
+If the shard comes available again by renewing its lease it is considered ready again.
+If the shard fails to renew its lease though, the sharder considers the instance unavailable.
+However, before it removing the instance from partitioning, it tries to acquire the shard lease once.
+This is done to ensure the API server is functioning well and the sharder doesn't act on stale lease data.
+If the sharder is able to acquire the shard lease, it considers the instance dead, removes it from partitioning and moves objects to available instances.
+Afterwards, the sharder doesn't touch the shard lease anymore.
+With this, the shard is allowed to acquire its lease once it comes up again after the lease duration set by the sharder has passed.
+If this is successful, the instance is considered ready and considered again for partitioning.
+
+The sharder garbage collects leases of dead shards after 1 minute of inactivity.
+With this, leases of voluntarily terminated instances as well as failed instances get cleaned up eventually.
 
 ## Partitioning
 
@@ -80,6 +84,7 @@ If the shard fails to renew its lease within a configured period, it needs to st
 - unlike distributed databases
   - no request coordination is needed -> not persisted externally in dedicated store
   - assignment information not needed by all instances -> not propagating via gossip
+- one sharder per sharded object kind
 - sharder assigns objects to instances
   - adds labels to objects
 - instances need to know which objects are assigned to them:

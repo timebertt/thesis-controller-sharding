@@ -1,32 +1,38 @@
 # Implementation
 
-## Sharding Criteria
+## Architecture
 
-- chosen sharding criteria
+- controller-runtime
+- shard lease attached to manager
+- sharding configured per controller-watch pair
+- ...
 
-## Sharding Mechanism
+## Membership and Failure Detection
 
-- replica discovery
-  - via (headless?) Service?
-  - StatefulSet for stable shard identity?
-- sharding controller:
-  - deployment model: goroutine / sidecar / webhook / individual deployment?
-- manifesting sharding decisions
-  - in objects themselves
-  - or in dedicated objects
-    - e.g. if sharded by namespace
-    - otherwise, watches not restrictable
-  - or in external store
-  - labels
-    - selectable on watch connection
-    - users can remove labels -> should be deterministic / cached
-  - status field
-    - only possible on custom resources you control
-    - needs field selector to be selectable
-    - not supported using CRDs
-- actual controller changes
-  - restrict watches with namespace/label/field selectors
-  - handover?
+- sharded runnables
+- stopped when shard lease cannot be renewed
+- explain states
+- on shard failure, state label update basically triggers an event that the object sharder acts on
+- idea: StatefulSet could be used for stable hostname to minimize movements during rolling updates
+
+## Partitioning
+
+- consistent hashing
+- ring constructed based on shard leases
+- ring cached, reconstructed on lease updates
+- 100 tokens per instance (similar to virtual nodes in cassandra), inspired by groupcache
+
+## Coordination and Object Assignment
+
+- reconciler wrapper
+  - check shard label, discard object if not assigned to instance
+  - remove drain label if present
+
+## Preventing Concurrency
+
+
+## Challenges
+
 - sharding of owned objects is only eventually consistent
   - could lead to problems?
   - owned object assigned later than owner
