@@ -111,7 +111,7 @@ Otherwise, the mechanism would only replicate the cache and thereby resource req
 Another important requirement is that individual instances need to be able to retrieve the object assignment information after restarts.
 I.e., object assignments must be stored in a persistent manner.
 
-Furthermore, there must not be a single-point of failure or bottleneck for reconciliations.
+Furthermore, there must not be a single point of failure or bottleneck for reconciliations.
 This means, the sharding mechanism must not add additional points of failure on the critical path of API requests and the reconciliations themselves, which limit the mechanism's scalability again.
 During normal operation, reconciliations should not be blocked for a longer period of time.
 

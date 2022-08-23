@@ -83,27 +83,26 @@ In order to assign owned objects to the same shard as their owners, the owner's 
 
 ## Coordination and Object Assignment
 
-- unlike distributed databases
-  - no request coordination is needed -> not persisted externally in dedicated store
-  - assignment information not needed by all instances -> not propagating via gossip
-- one sharder per sharded object kind
-- sharder assigns objects to instances
-  - adds labels to objects
-- instances need to know which objects are assigned to them:
-  - labels used for filtered watches
-  - makes use of already existing watches in controllers, only need to add label selector
-  - once labels are persisted in etcd, no additional coordination is needed -- sharder is not on the critical path for all reconciliations
-  - controllers simply rebuild filtered watches after restart
-- objects are not assigned when sharder stops working (should recover quickly via active-passive HA though)
-- challenge: labels must not be mutated by user
-  - can be prevented via validating webhook
-- challenge: multiple controllers in same instance might work on the same object kind, share the same cache by default
-  - neglected for now (?)
-  - solution: multiple caches with different selectors?
-  - -> future work
-- challenge: relation between objects of same kind
-  - example: scheduler: pod anti affinity
-  - -> future work
+Realizing coordination and object assignment ([requirement @sec:req-coordination]) in Kubernetes controllers is much simpler than in distributed databases.
+In contrast to sharding in databases, no request coordination is needed because no client directly communicates with the controller instances.
+Because of this, object assignments don't need to be persisted in a dedicated store or storage section like in Bigtable, MongoDB or Spanner [@bigtable2006; @mongodbdocs; @spanner2013].
+Furthermore, instances don't need to be aware of assignment information of objects they are not responsible for.
+Hence, there is no need to propagate this information throughout the system as it is done in many distributed databases [@dynamo2007; @cassandradocs].
+
+In the presented design, object assignment is done by the sharder controller by labelling API objects with the instance ID of the responsible shard.
+For each object kind that should be sharded, one sharder controller is started that uses the mechanisms described above for discovering available instances and determining assignments.
+Persisting assignments in the API objects themselves is done in order to make use of existing controller infrastructure for coordination.
+By labelling the objects themselves, controllers can simply use a filtered watch to retrieve all API objects that are assigned to them.
+For this, a label selector on the `shard` label for the shards' instance ID is added to the controllers' watches.
+With this, the controllers' caches and reconciliations are already restricted to the relevant objects and no further coordination between controllers is needed.
+Additionally, controllers already rebuild watch connections on failures or after restarts automatically.
+This means, object assignment information is automatically rebuilt on failures or restarts without any additional implementation.
+
+The sharder itself is not on the critical path for all reconciliations.
+As soon as objects are assigned to an instance, the sharder doesn't need to be available for reconciliations to happen successfully.
+Reconciliations of new object might however be delayed by a short period of time on leader transitions.
+As there are multiple instances of the sharder controller in stand-by, handover should generally happen quickly.
+Also, handover can be sped up by releasing the leader election lease on voluntary step down.
 
 ## Preventing Concurrency
 
