@@ -97,6 +97,8 @@ For this, a label selector on the `shard` label for the shards' instance ID is a
 With this, the controllers' caches and reconciliations are already restricted to the relevant objects and no further coordination between controllers is needed.
 Additionally, controllers already rebuild watch connections on failures or after restarts automatically.
 This means, object assignment information is automatically rebuilt on failures or restarts without any additional implementation.
+Using a filter watch and cache additionally addresses [requirement @sec:req-scale-out], as all relevant resource requirements ([@tbl:scaling-resources]) are distributed across multiple instances.
+The system's capacity roughly increases linearly with each added instance.
 
 The sharder itself is not on the critical path for all reconciliations.
 As soon as objects are assigned to an instance, the sharder doesn't need to be available for reconciliations to happen successfully.
@@ -106,38 +108,37 @@ Also, handover can be sped up by releasing the leader election lease on voluntar
 
 ## Preventing Concurrency
 
-- concurrency generally prevented as long as assignments do not change
-- however, concurrency needs to be prevented when moving objects
-- old instance needs to stop working on moved objects before new instance picks up objects
+With the presented design, concurrent writes from different instances to the same API object are already prevented as long as object assignments don't change.
+To fulfill [requirement @sec:req-concurrency] concurrent mutating reconciliations must additionally be prevented when moving objects between shards. 
+In this case, the sharder must ensure the old instance has stopped working on the given object before another instance picks it up.
 
-- when moving objects from ready instance (rebalancing during scale-out, movement during rolling update):
-  - challenge: system is pull/watch-based (no request routing), watches/caches might lag behind
-  - sharder can't know if instances already observed the movement
-  - instances need to acknowledge movement and stop working on object accordingly
-  - protocol/flow to ensure, that controllers have observed movement
-    - on desire to move object: sharder adds "drain" label, indicating that the object should be moved
-    - when controller observes the drain label, it must remove it as well as the shard label, marking the object as drained/unassigned
-    - once sharder observes that object is drained, it can be reassigned
-    - if controller doesn't remove the drain label, sharder removes it forcefully when instance gets unavailable
-  - facilitates fast movements with ready instances
-- when moving objects from terminating instance (rebalancing during scale-down, moving during rolling update):
-  - instance releases its own lease
-  - objects are reassigned immediately, sharder skips drain operation
-- when moving objects from dead instance (rebalancing after instance failure):
-  - after lease expiration (failure detected by sharder), objects are forcefully moved
-  - if instance comes up again, objects can be assigned to it again once it renewed its lease
-- alternative: consensus/gossip based concurrency control
-  - make things more complicated: implementation-wise, more communication involved
-  - adds another failure domain: peer-to-peer communication
-- alternative: static hash slots (comparable to Redis) instead of consistent hashing with lease per slot
-  - high overhead for lease updates
-  - doesn't scale, etcd as bottleneck
-- alternative: short period of no reconciliation (~15 seconds) between unassigning and reassigning
-  - would need to prevent unnecessary movement during rolling updates
-  - e.g., move all objects belonging to one virtual node in batch, one virtual node at a time
+The first case that needs to be considered for this is when moving objects from a ready shard to another shard.
+This can be required for rebalancing during scale-out or a rolling update, i.e. when a new instance is added.
+As the controller system is asynchronous and pull-/watch-based, the sharder cannot immediately reassign objects.
+The watch connection and cache of the old instance might receive the reassignment event later than the new instance, which could lead to conflicting reconciliations.
+In other words, the sharder can't know if and when an instance has stopped working on an object that is supposed to be moved.
+To address this challenge, the old instance needs to acknowledge the reassignment and confirm it has stopped working on the object.
+When the sharder needs to move an object from a ready shard to another, it adds a `drain` label indicating that the object should be moved.
+As soon as the old shard observes the `drain` label it must remove it from the object as well as the `shard` label, marking the object as unassigned.
+When the sharder observes that the object is unassigned it reassigns it to the desired instance like it does for new objects.
+Following this protocol, concurrent reconciliations by old and new shard are prevented.
+Also, it facilitates fast rebalancing with ready and responsive instances.
+
+A second case to consider is when moving objects from a terminating instance to a ready instance.
+This can be required for rebalancing during scale-in or a rolling update, i.e. when an existing instance is removed.
+In this case, the shard releases its shard lease to signal voluntary termination to the sharder.
+As soon as the sharder observes this change to the shard lease it immediately reassigns API objects to another instance.
+A `drain` operation is not performed in this case because the instance has already acknowledged that it stopped working on the objects by releasing its shard lease.
+
+The last case that needs to be considered is when moving objects from a dead instance, i.e. for rebalancing after an instance failure.
+Once the sharder has detected a shard failure and acquired the shard lease as described in [@sec:des-membership], objects are reassigned immediately without performing a `drain` operation.
+If the shard eventually becomes ready again, objects can be assigned to it again once it acquires its lease just like when a new instance is added.
+A special case occurs when an instance failure is detected after initiating a `drain` operation.
+In this case, the sharder removes the `drain` label itself when updating the `shard` label to prevent performing the `drain` operation with the shard that the object is suppposed to be assigned to.
 
 ## Alternatives Considered
 
+<!--
 - sharding by resource
   - can't be done dynamically / during runtime (or at least that's more difficult)
   - unbalanced distribution / no control over shard sizes
@@ -155,3 +156,14 @@ Also, handover can be sped up by releasing the leader election lease on voluntar
     - restart of caches/controllers undesirable
       - restarts are costly
       - reduces scalability benefits
+-->
+
+- preventing concurrency could also be done in another way:
+- consensus/gossip based concurrency control
+  - makes things more complicated: implementation-wise, more communication involved
+  - adds another failure domain: peer-to-peer communication
+- static hash slots (comparable to Redis) instead of consistent hashing with  one lease per slot
+  - high overhead for lease updates; doesn't scale, etcd is bottleneck
+- short period of no reconciliation (~15 seconds) between unassigning and reassigning
+  - would need to prevent unnecessary movement during rolling updates
+  - e.g., move all objects belonging to one virtual node in batch, one virtual node at a time
