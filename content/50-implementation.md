@@ -29,25 +29,56 @@ Lastly, the operator should hold all relevant state in memory, meaning it should
 Following these best practices in the example operator is important, because most controllers are implemented in compliance with them.
 Hence, the evaluation can only provide meaningful insights if the measured implementation follows the best practices.
 
-Webhosting Operator [^webhosting-operator]
-The idea behind this operator is simple: we want to build a webhosting platform on top of Kubernetes.
-This means, we want to be able to configure websites for our customers in a declarative manner.
-The desired state is configured via Kubernetes (custom) resources and the operator takes care to spin up websites and expose them.
+Based on these criteria, the webhosting operator [^webhosting-operator] was designed and built.
+The operator and its resources are modelled to form a webhosting-like platform, where customers can create and manage websites in a declarative manner via the Kubernetes API.
+Websites reside in a project namespace, have a name, and specify a website theme, which defines color and font family.
+The desired state of websites is declared via Kubernetes resources and the operator manages the required webservers and exposes to the internet.
 
-There are three resources involved:
+```yaml
+apiVersion: webhosting.timebertt.dev/v1alpha1
+kind: Theme
+metadata:
+  name: exciting
+spec:
+  color: darkcyan
+  fontFamily: Menlo
+---
+apiVersion: webhosting.timebertt.dev/v1alpha1
+kind: Website
+metadata:
+  name: homepage
+  namespace: project-foo
+spec:
+  theme: exciting
+```
 
-- `Namespace`
-  - each customer project gets its own namespace
-- `Theme` (`webhosting.timebertt.dev`, cluster-scoped)
-  - represents an offered theme for customer websites (managed by service admin)
-  - configures a font family and color for websites
-- `Website` (`webhosting.timebertt.dev`, namespaced)
-  - represents a single website a customer orders (managed by customer in a project namespace)
-  - website simply displays the website's name (static)
-  - each website references exactly one theme
-  - deploys and configures a simple `nginx` deployment
-  - exposes the website via service and ingress
+: Example webhosting operator objects {#lst:webhosting}
 
+Three API resources are involved when managing websites using the webhosting operator:
+
+1. `Namespaces` are used to separate website of different customers and projects.
+I.e., one could provide new customers with access to their own namespace upon registration to the service.
+
+2. `Theme` is a custom resource of the webhosting operator and part of the `webhosting.timebertt.dev` API group.
+`Themes` are cluster-scoped and can be referenced by `Websites` in all namespaces.
+They are managed by the service administrator and configure an HTML color and font family.
+
+3. `Websites` are also part of the operator's custom API group, but are namespaced.
+A `Website` object represents a single website managed by a customer in a respective project namespace.
+It references exactly one of the offered `Themes`.
+For each `Website` object, the operator creates and configures an nginx `Deployment` to host a simple static website that displays the website's name and technical ID ("server name").
+The website uses the color of the referenced `Theme` as a background color as well as the declared font family.
+Additionally, the `Deployment` is exposed via an `Ingress` object on the URL path `/<namespace>/<website-name>`.
+
+![Sample website managed by webhosting operator](../assets/sample-website.png)
+
+**Details?**
+
+- website status
+- watch owned objects
+- watch themes
+- deterministic names
+- short reconciliations, status refreshed on each reconciliation
 
 ## Architecture
 
