@@ -1,4 +1,4 @@
-# Design
+# Design {#sec:design}
 
 This chapter presents a design for implementing sharding in Kubernetes controllers to make them horizontally scalable.
 The presented design includes well-known approaches for sharding in distributed databases and applies them to the problem in Kubernetes controllers.

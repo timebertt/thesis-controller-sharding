@@ -1,24 +1,35 @@
 # Implementation
 
-## Demo Operator
+This chapter describes how the design presented in [chapter @sec:design] is implemented in practice.
+First, the webhosting operator is introduced which serves as an example operator for implementing sharding in Kubernetes controllers.
+Then, the overall architecture of the implementation is described followed by detailed descriptions of the most important aspects.
 
-- introduce webhosting-operator [^webhosting-operator]
+The presented implementation is used for evaluation in [chapter @sec:evaluation].
+
+## Webhosting Operator
 
 [^webhosting-operator]: [https://github.com/timebertt/kubernetes-controller-sharding](https://github.com/timebertt/kubernetes-controller-sharding)
 
-**Requirements**
+In order to implement and evaluate the presented design, an operator is needed that serves as an example.
+The sample operator should fulfill the following criteria so that the most important aspects of sharding in Kubernetes controllers can be covered and evaluated:
 
-In order to demonstrate and compare different sharding approaches, an operator is needed that fulfills the following requirements:
+1. The operator should be composed of a single controller performing reconciliations for one (custom) resource.
+With this, the operator's capacity and throughput can be measured and compared more easily as they are mainly determined by the amount and event rate of this one resource. 
 
-- it needs to act on multiple custom resources
-  - for demonstrating the sharding by resource type approach
-- in addition to watching its own resources, it needs to watch other objects (e.g. owned objects) as well
-  - sharding will be difficult here, so add it as a challenge
-- it needs to deal with cluster-scoped objects (that are relevant for multiple namespaced objects)
-  - this adds side effects (duplicated cache) which need to be taken care of
+2. In addition to watching the reconciled objects, the controller should also watch all relevant objects.
+This includes owned objects, that the controller manages for realizing the intent of the reconciled objects.
+Also, it should watch objects that might be referenced by multiple reconciled objects.
+Both of these scenarios are common upon controllers, which makes the example operator a good representative.
 
-**Idea**
+3. Finally, the operator needs to follow controller best practices [@k8sdesign].
+Most importantly, it should be level-based, meaning it performs reconciliations purely based on desired state and currently observed state but independent of observed changes to these states.
+However, it should be edge-triggered for performance and responsiveness, i.e. start reconciliations based on relevant change events.
+Reconciliations should be short and must not block until desired and actual state converge.
+Lastly, the operator should hold all relevant state in memory, meaning it should cache all API resources it works with.
+Following these best practices in the example operator is important, because most controllers are implemented in compliance with them.
+Hence, the evaluation can only provide meaningful insights if the measured implementation follows the best practices.
 
+Webhosting Operator [^webhosting-operator]
 The idea behind this operator is simple: we want to build a webhosting platform on top of Kubernetes.
 This means, we want to be able to configure websites for our customers in a declarative manner.
 The desired state is configured via Kubernetes (custom) resources and the operator takes care to spin up websites and expose them.
@@ -75,19 +86,21 @@ There are three resources involved:
 
 ## Observability
 
+\todo[inline]{move to next chapter?}
+
 - webhosting-exporter
 - kube-state-metrics, kube-prometheus, Grafana
 - metrics for sharding: shard sizes, sharder actions, ring calculations
 - visualization: dashboards
 
-## Challenges
+## Challenges ?
 
 - sharding of owned objects is only eventually consistent
   - could lead to problems?
   - owned object assigned later than owner
   - owner is drained, owned object immediately reassigned
 
-## Benefits / Applications
+## Benefits / Applications ?
 
 - dynamic scaling up and down
   - e.g. targeted queue wait duration, sharding size, active/idle workers
