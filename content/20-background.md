@@ -57,6 +57,7 @@ metadata:
     foo: bar
   labels:
     app: nginx
+  uid: f4dc8f2d-075d-41b1-a511-0f44671cd5d0
 spec:
   replicas: 1
   selector:
@@ -86,11 +87,33 @@ All API objects contain common metadata (`apiVersion`, `kind`, `metadata`) descr
 The `metadata` section contains the object's identifying `name` along with user-defined key-value pairs as `labels` and `annotations`.
 Labels are used for filtering and grouping API objects by certain attributes, while annotations allow adding arbitrary information.
 API objects are grouped by user-created namespaces (specified in `metadata.namespace`), if the respective type is namespace-scoped.
+Additionally, all API objects are assigned a globally unique identifier in `metadata.uid`.
+As it changes when an object is deleted and recreated, it can be used to distinguish between different instances of the same kind in the same namespace with the same name over time.
+
+API objects can specify so-called owners in the `metadata.ownerReferences` field.
+This is used by controllers for efficient mapping to owning objects.
+Furthermore, an API object is automatically deleted by the garbage collector controller once all referenced owners are gone.
+
+```yaml
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: nginx-8f458dc5b
+  namespace: default
+  # ...
+  ownerReferences:
+  - apiVersion: apps/v1
+    blockOwnerDeletion: true
+    controller: true
+    kind: Deployment
+    name: nginx
+    uid: f4dc8f2d-075d-41b1-a511-0f44671cd5d0
+```
+
+: Example owner reference {#lst:owner-reference}
 
 Most API objects also contain `spec` and `status` sections.
 The `spec` section contains the user-declared desired state of the object, while the `status` section contains the state observed by the responsible controller.
-
-\todo[inline]{OwnerReferences / garbage collection}
 
 ## API Machinery {#sec:apimachinery}
 
@@ -126,8 +149,10 @@ All mutating operations change the `resourceVersion` field, allowing clients to 
 Currently, the field is backed by the revision that etcd stores as metadata for all keys and returns on all requests.
 Resource versions are represented as strings and must be treated as opaque by clients, i.e., they may only be checked for equality.
 In Kubernetes, the resource version is used for implementing optimistic concurrency control and efficient detection of changes (i.e., watches).
-
-\todo[inline]{generation?}
+In addition to the `resourceVersion` field, most API objects carry a `metadata.generation` field.
+The `generation` field is set to `1` on creation and increased on every change to the `spec` section and on deletion.
+This field is typically used by controllers for filtering out irrelevant change events.
+Additionally, controllers typically report the latest observed generation of the API object in `status.observedGeneration` allowing other clients to determine if changes to the desired state have already been picked up by the controller.
 
 For optimistic concurrency control, clients typically pass the resource version when updating or patching objects as part of a read-modify-write loop.
 With this, the API server checks the given resource version against the resource version of the current object in the store.
@@ -158,12 +183,12 @@ Under certain circumstances, field selectors can however decrease processing eff
 
 ## API Extensions
 
-\todo[inline]{check if relevant}
+\todo[inline]{write this section}
 
 - CustomResourceDefinition
+- operator pattern: custom resource + controller
 - Webhooks
 - API aggregation?
-- operator pattern: custom resource + controller
 
 ## Controllers
 
