@@ -26,13 +26,13 @@ Most importantly, it should be level-based, meaning it performs reconciliations 
 However, it should be edge-triggered for performance and responsiveness, i.e. start reconciliations based on relevant change events.
 Reconciliations should be short and must not block until desired and actual state converge.
 Lastly, the operator should hold all relevant state in memory, meaning it should cache all API resources it works with.
-Following these best practices in the example operator is important, because most controllers are implemented in compliance with them.
+Following these best practices in the example operator is important, because most production-grade controllers are implemented in compliance with them.
 Hence, the evaluation can only provide meaningful insights if the measured implementation follows the best practices.
 
 Based on these criteria, the webhosting operator [^webhosting-operator] was designed and built.
 The operator and its resources are modelled to form a webhosting-like platform, where customers can create and manage websites in a declarative manner via the Kubernetes API.
 Websites reside in a project namespace, have a name, and specify a website theme, which defines color and font family.
-The desired state of websites is declared via Kubernetes resources and the operator manages the required webservers and exposes to the internet.
+The desired state of websites is declared via Kubernetes resources and the operator manages the required webservers and exposes them to the internet.
 
 ```yaml
 apiVersion: webhosting.timebertt.dev/v1alpha1
@@ -72,13 +72,16 @@ Additionally, the `Deployment` is exposed via an `Ingress` object on the URL pat
 
 ![Sample website managed by webhosting operator](../assets/sample-website.png)
 
-**Details?**
+The webhosting operator contains a single controller for realizing the webhosting functionality.
+On each reconciliation of a `Website` object it ensures that owned objects of the `Website` are correctly configured: the nginx `ConfigMap` and `Deployment` as well as `Service` and `Ingress` for exposing the `Deployment`.
+It adds owner references from all of these objects to the owning `Website` object.
+In addition to watching `Website` objects, it also watches these owned objects and enqueues the owning `Website` for reconciliation on relevant changes, e.g. when the `Deployment` object's readiness status changes.
+This facilitates self-healing capabilities of websites, as the operator ensures that all required objects have the desired state.
+Additionally, it allows the controller to immediately report the status of the `Website` object in the `status.phase` field based on the status of the nginx `Deployment`.
 
-- website status
-- watch owned objects
-- watch themes
-- deterministic names
-- short reconciliations, status refreshed on each reconciliation
+Furthermore, the controller watches all available `Themes` and enqueues all `Website` objects that reference a `Theme` for reconciliation, if its specification changes.
+With this, changes to `Themes` are immediately rolled out to all `Websites` that use them.
+Also, `Website` reconciliations are very short making the controller responsive and scalable.
 
 ## Architecture
 
