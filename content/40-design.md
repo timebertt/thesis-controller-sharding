@@ -29,7 +29,7 @@ The sharded controllers watch and cache only the objects they are responsible fo
 
 ## Membership and Failure Detection {#sec:des-membership}
 
-To address [requirement @sec:req-membership], a lease-based membership and failure detection mechanism is used.
+To address requirement \ref{req:membership}, a lease-based membership and failure detection mechanism is used.
 The mechanism is heavily inspired by Bigtable [@bigtable2006] but adapted to use Kubernetes `Lease` objects stored in etcd instead of leases stored in Chubby [@chubby2006].
 
 The sharder performs usual leader election to ensure that there is only one active sharder at any given time.
@@ -65,7 +65,7 @@ With this, leases of voluntarily terminated instances as well as failed instance
 
 ## Partitioning
 
-To address [requirement @sec:req-partitioning], a variant of consistent hashing is used as described in [@karger1997consistent; @stoica2001chord].
+To address requirement \ref{req:partitioning}, a variant of consistent hashing is used as described in [@karger1997consistent; @stoica2001chord].
 With this, partitioning is done similarly as in Apache Cassandra [@cassandradocs] and Amazon Dynamo [@dynamo2007] but adapted to use Kubernetes API object metadata as input.
 Consistent hashing is chosen because it minimizes movement on addition and removal of instances.
 Also, it provides a simple and deterministic algorithm for determining the responsible shard solely based on the set of available instances.
@@ -83,7 +83,7 @@ In order to assign owned objects to the same shard as their owners, the owner's 
 
 ## Coordination and Object Assignment
 
-Realizing coordination and object assignment ([requirement @sec:req-coordination]) in Kubernetes controllers is much simpler than in distributed databases.
+Realizing coordination and object assignment (requirement \ref{req:coordination}) in Kubernetes controllers is much simpler than in distributed databases.
 In contrast to sharding in databases, no request coordination is needed because no client directly communicates with the controller instances.
 Because of this, object assignments don't need to be persisted in a dedicated store or storage section like in Bigtable, MongoDB or Spanner [@bigtable2006; @mongodbdocs; @spanner2013].
 Furthermore, instances don't need to be aware of assignment information of objects they are not responsible for.
@@ -97,7 +97,7 @@ For this, a label selector on the `shard` label for the shards' instance ID is a
 With this, the controllers' caches and reconciliations are already restricted to the relevant objects and no further coordination between controllers is needed.
 Additionally, controllers already rebuild watch connections on failures or after restarts automatically.
 This means, object assignment information is automatically rebuilt on failures or restarts without any additional implementation.
-Using a filter watch and cache additionally addresses [requirement @sec:req-scale-out], as all relevant resource requirements ([@tbl:scaling-resources]) are distributed across multiple instances.
+Using a filter watch and cache additionally addresses requirement \ref{req:scale-out}, as all relevant resource requirements ([@tbl:scaling-resources]) are distributed across multiple instances.
 The system's capacity roughly increases linearly with each added instance.
 
 The sharder itself is not on the critical path for all reconciliations.
@@ -109,7 +109,7 @@ Also, handover can be sped up by releasing the leader election lease on voluntar
 ## Preventing Concurrency
 
 With the presented design, concurrent writes from different instances to the same API object are already prevented as long as object assignments don't change.
-To fulfill [requirement @sec:req-concurrency] concurrent mutating reconciliations must additionally be prevented when moving objects between shards. 
+To fulfill requirement \ref{req:concurrency} concurrent mutating reconciliations must additionally be prevented when moving objects between shards. 
 In this case, the sharder must ensure the old instance has stopped working on the given object before another instance picks it up.
 
 The first case that needs to be considered for this is when moving objects from a ready shard to another shard.

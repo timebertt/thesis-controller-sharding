@@ -66,8 +66,7 @@ This section defines precise requirements for a sharding mechanism for Kubernete
 \todo{mention sharding in DBs}
 Once these requirements are met, the resources listed in [@tbl:scaling-resources] can be distributed across multiple instances making the implementing controller horizontally scalable.
 
-### Requirement 1: Membership and Failure Detection {#sec:req-membership}
-\todo[inline]{fix requirement numbering}
+\subsection*{\requirement\label{req:membership}Membership and Failure Detection}
 
 Firstly, the system needs to populate information about the set of controller instances.
 In order to distribute object ownership across instances, there must be mechanism for discovering members of the sharded setup.
@@ -79,7 +78,7 @@ Also, instances can be dynamically added or removed to adapt to growing or decre
 Furthermore, instances will typically be replaced in quick succession during rolling updates.
 For these reasons, it is desirable to handle voluntary disruption specifically (scale-down, rolling updates) to achieve fast rebalancing.
 
-### Requirement 2: Partitioning {#sec:req-partitioning}
+\subsection*{\requirement\label{req:partitioning}Partitioning}
 
 Secondly, the sharding mechanism must include a partitioning algorithm for determining ownership of a given object based on information about the set of available controller instances.
 It must map every sharded API object to exactly one instance.
@@ -95,7 +94,7 @@ For this, all owned objects should map to the same partition key as their owners
 However, there might as well be other relationships between objects their controllers act upon.
 Hence, the mapping from object to its partition key needs to be customizable.
 
-### Requirement 3: Coordination and Object Assignment {#sec:req-coordination}
+\subsection*{\requirement\label{req:coordination}Coordination and Object Assignment}
 
 Next, the sharding mechanism must provide some form of coordination between individual controller instances and assign API objects to the instances based on the partitioning results.
 As Kubernetes controllers realize the desired state of the system asynchronously, there is no direct communication between the user issuing an intent and the controller acting on the intent.
@@ -115,7 +114,7 @@ Furthermore, there must not be a single point of failure or bottleneck for recon
 This means, the sharding mechanism must not add additional points of failure on the critical path of API requests and the reconciliations themselves, which limit the mechanism's scalability again.
 During normal operation, reconciliations should not be blocked for a longer period of time.
 
-### Requirement 4: Preventing Concurrency {#sec:req-concurrency}
+\subsection*{\requirement\label{req:concurrency}Preventing Concurrency}
 
 Additionally, even when object ownership is distributed across multiple controller instances, it's important that concurrent reconciliations for a single object in different instances are still not allowed.
 I.e., the purpose of the current leader election mechanism must still not be violated.
@@ -125,7 +124,7 @@ The only requirement is, that multiple controller instances must not perform wri
 In other words, the wanted sharding mechanism must not involve replication of objects.
 All API objects are only assigned to a single instance.
 
-### Requirement 5: Incremental Scale-Out {#sec:req-scale-out}
+\subsection*{\requirement\label{req:scale-out}Incremental Scale-Out}
 
 The final requirement is that the introduced sharding mechanism provides incremental scale-out properties.
 This means, that the capacity and throughput of the system increases almost linearly with the added resources, i.e. with every added controller instance.
