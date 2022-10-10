@@ -179,16 +179,61 @@ Field selectors are similar to labels selectors but filter by matching individua
 However, field selectors cannot be used for selecting arbitrary object fields.
 Instead, they can only be used with specific fields for which the API server supports field selectors.
 For `list` request, field selectors behave similar to label selectors, meaning they are processed for each list item before returning the filtered result to clients.
-Under certain circumstances, field selectors can however decrease processing effort on the API server side for `watch` requests via index lookups.
+Under certain circumstances, field selectors can however reduce processing effort on the API server side for `watch` requests via index lookups.
 
-## API Extensions
+## API Extensions {#sec:apiextensions}
 
-\todo[inline]{write this section}
+The Kubernetes API server features several mechanisms for extending the API and integrating third-party components.
+These include, most importantly but not exhaustively, webhooks and custom resources.
+Webhooks can be registered via dedicated API objects and provide means to validate or mutate API requests.
+However, webhooks are not discussed in further detail in this thesis.
+Custom resources, on the other hand, offer options to augment the set of built-in API resources with additional resources that follow the same API semantics. [@k8sdocs]
 
-- CustomResourceDefinition
-- operator pattern: custom resource + controller
-- Webhooks
-- API aggregation?
+There are two ways to register custom resources with the API server: via `APIServices` (often referred to as API aggregation) and `CustomResourceDefinitions` (CRDs).
+An `APIService` is a usual API object that configures the API server to delegate API requests for a certain set of `GroupVersions` to another API server (extension API server), that is typically deployed as a dedicated component into the cluster.
+This extension API server needs to implement the same semantics as the Kubernetes API server itself, so that clients can use the extended resources by the same means as built-in resources.
+From a client's perspective, custom resources are available at the same endpoint (via the Kubernetes API server) and follow the same characteristics as described in [@sec:resourcemodel; @sec:apimachinery].
+Extension API servers are developed, deployed and managed independently of the Kubernetes API server and thus feature full flexibility but also require a certain amount of development and operations effort.
+
+In contrast to that, CRDs offer a lightweight mechanism for augmenting the Kubernetes API with custom resources, though with less flexibility.
+`CustomResourceDefinitions` are API objects that each register a single custom resource with the API server in a purely declarative manner.
+Most importantly, they specify the API group, versions and kind along with an optional API schema.
+As soon as CRDs are created, the Kubernetes API server starts serving endpoints for the specified resources.
+Although the API server doesn't know the concrete structure and meaning of the resources, it offers the exact same characteristics for such API objects.
+This includes the same object structure (metadata, spec and status), the same API request semantics (including watch requests), discovery endpoints, label selectors and so on. [@k8sdocs; @hausenblas2019programming]
+
+```yaml
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: websites.webhosting.timebertt.dev
+spec:
+  group: webhosting.timebertt.dev
+  names:
+    kind: Website
+    listKind: WebsiteList
+    plural: websites
+    singular: website
+  scope: Namespaced
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+    subresources:
+      status: {}
+    schema:
+      openAPIV3Schema:
+        description: Website enables declarative management of hosted websites.
+        # ...
+```
+
+: Example CustomResourceDefinition {#lst:crd}
+
+By leveraging these mechanisms, the Kubernetes API can be extended to provide declarative management of arbitrary API resources.
+However, custom resources as such don't implement any corresponding business logic.
+For this, additional controllers can be deployed that implement the logic for realizing the desired state declared by the API objects.
+This combination of a custom resource and a custom controller is often referred to as the "operator pattern", where the custom controller is referred to as the "operator".
+Operators can be used to codify any kind of operation knowledge for applications and represent a powerful mechanism for running cloud-native workloads on Kubernetes. [@hausenblas2019programming]
 
 ## Controllers
 
