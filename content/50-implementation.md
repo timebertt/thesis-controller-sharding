@@ -3,7 +3,6 @@
 This chapter describes how the design presented in [chapter @sec:design] is implemented in practice.
 First, the webhosting operator is introduced which serves as an example operator for implementing sharding in Kubernetes controllers.
 Then, the overall architecture of the implementation is described followed by detailed descriptions of the most important aspects.
-
 The presented implementation is used for evaluation in [chapter @sec:evaluation].
 
 ## Webhosting Operator
@@ -14,12 +13,12 @@ In order to implement and evaluate the presented design, an operator is needed t
 The sample operator should fulfill the following criteria so that the most important aspects of sharding in Kubernetes controllers can be covered and evaluated:
 
 1. The operator should be composed of a single controller performing reconciliations for one (custom) resource.
-With this, the operator's capacity and throughput can be measured and compared more easily as they are mainly determined by the amount and event rate of this one resource. 
+With this, the operator's capacity and throughput can be measured and compared more easily as they are mainly determined by the amount of objects and event rate for this one resource. 
 
 2. In addition to watching the reconciled objects, the controller should also watch all relevant objects.
 This includes owned objects, that the controller manages for realizing the intent of the reconciled objects.
 Also, it should watch objects that might be referenced by multiple reconciled objects.
-Both of these scenarios are common upon controllers, which makes the example operator a good representative.
+Both of these are common patterns in controllers, which makes the example operator a good representative.
 
 3. Finally, the operator needs to follow controller best practices [@k8sdesign].
 Most importantly, it should be level-based, meaning it performs reconciliations purely based on desired state and currently observed state but independent of observed changes to these states.
@@ -29,7 +28,7 @@ Lastly, the operator should hold all relevant state in memory, meaning it should
 Following these best practices in the example operator is important, because most production-grade controllers are implemented in compliance with them.
 Hence, the evaluation can only provide meaningful insights if the measured implementation follows the best practices.
 
-Based on these criteria, the webhosting operator [^webhosting-operator] was designed and built.
+Based on these criteria, the webhosting operator[^webhosting-operator] was designed and built.
 The operator and its resources are modelled to form a webhosting-like platform, where customers can create and manage websites in a declarative manner via the Kubernetes API.
 Websites reside in a project namespace, have a name, and specify a website theme, which defines color and font family.
 The desired state of websites is declared via Kubernetes resources and the operator manages the required webservers and exposes them to the internet.
@@ -81,7 +80,7 @@ Additionally, it allows the controller to immediately report the status of the `
 
 Furthermore, the controller watches all available `Themes` and enqueues all `Website` objects that reference a `Theme` for reconciliation, if its specification changes.
 With this, changes to `Themes` are immediately rolled out to all `Websites` that use them.
-Also, `Website` reconciliations are very short making the controller responsive and scalable.
+Also, `Website` reconciliations are very short, making the controller responsive and scalable.
 
 ## Architecture
 
