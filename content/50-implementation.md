@@ -84,11 +84,37 @@ Also, `Website` reconciliations are very short, making the controller responsive
 
 ## Architecture
 
-- controller-runtime
+The webhosting operator is leveraging the controller-runtime[^controller-runtime] library.
+The library provides reusable constructs for building custom Kubernetes controllers -- operators -- in the Go programming language.
+In controller-runtime, the `Manager` is the most important construct.
+A `Manager` is initialized and started once per operator as the root component and manages all other components like controllers, webhook server and handlers, leader election, metrics endpoints, loggers, etc.
+
+[^controller-runtime]: [https://github.com/kubernetes-sigs/controller-runtime](https://github.com/kubernetes-sigs/controller-runtime)
+
+Individual controllers can be implemented by creating a corresponding `Controller` construct and configuring a `Reconciler` and watches.
+The `Reconciler` contains the business logic of a controller.
+It is invoked with a reconciliation request containing an object's name and namespace.
+On each invocation, it has to ensure that the actual state of the system matches the desired state of the given object, i.e. perform reconciliation of the object.
+The configured watches and event handlers are responsible for enqueuing reconciliation requests in response to relevant watch event emitted by the API server.
+The `Controller` ensures that all other components like workqueue, cache and worker routines are correctly set up.
+All `Controllers` are registered with the `Manager` which then ensures that the controllers are started when leader election is won and stopped as soon as leader election is lost.
+It also injects shared dependencies like client, cache and loggers into the individual controllers.
+
+As part of this thesis, the presented design (chapter [-@sec:design]) was implemented in the controller-runtime library in a generic way that allows reusing the mechanisms in all operators built upon the controller-runtime library.
+The webhosting operator only makes use of the implemented sharding mechanisms in controller-runtime for demonstration and evaluation purposes. 
+
+When adding controller sharding to an operator based on controller-runtime, there are two places involved: when configuring the `Manager` and when setting up the sharded `Controller`.
+
+
+
 - perspective of controller developer / outside of library
-- shard lease attached to manager
-- sharding configured per controller-watch pair
-- ...
+  - new fields on manager / manager options for sharding
+  - builder: offers new options for configuring sharded controllers/objects
+- shard ID, lease attached to manager
+- sharded cache attached to manager (filtered )
+- lease controller once per manager
+- sharder controller added per sharded object
+- reconciler wrapper
 
 ## Shard Lease
 
@@ -97,9 +123,9 @@ Also, `Website` reconciliations are very short, making the controller responsive
 
 ## Lease Controller
 
-- explain states
+- explain shard states determined from shard leases
+- shard state label on leases
 - on shard failure, state label update basically triggers an event that the object sharder acts on
-- idea: StatefulSet could be used for stable hostname to minimize movements during rolling updates
 - explain event handler, predicates, mappers
 
 ## Sharder Controller
@@ -110,11 +136,11 @@ Also, `Website` reconciliations are very short, making the controller responsive
 - 100 tokens per instance (similar to virtual nodes in cassandra), inspired by groupcache
 - explain event handler, predicates, mappers
 
-## Object Controller
+## Reconciler Wrapper
 
-- reconciler wrapper
-  - check shard label, discard object if not assigned to instance
-  - remove drain label if present
+- injected for the reconciler of sharded controllers
+- check shard label, discard object if not assigned to instance
+- remove drain label if present
 - explain event handler, predicates, mappers
 
 ## Observability
@@ -132,6 +158,7 @@ Also, `Website` reconciliations are very short, making the controller responsive
   - could lead to problems?
   - owned object assigned later than owner
   - owner is drained, owned object immediately reassigned
+- movement on rolling updates, idea: StatefulSet could be used for stable hostname to minimize movements during rolling updates
 
 ## Benefits / Applications ?
 
