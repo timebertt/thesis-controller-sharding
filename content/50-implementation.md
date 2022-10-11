@@ -100,29 +100,31 @@ The `Controller` ensures that all other components like workqueue, cache and wor
 All `Controllers` are registered with the `Manager` which then ensures that the controllers are started when leader election is won and stopped as soon as leader election is lost.
 It also injects shared dependencies like client, cache and loggers into the individual controllers.
 
-As part of this thesis, the presented design (chapter [-@sec:design]) was implemented in the controller-runtime library in a generic way that allows reusing the mechanisms in all operators built upon the controller-runtime library.
-The webhosting operator only makes use of the implemented sharding mechanisms in controller-runtime for demonstration and evaluation purposes. 
+As part of this thesis, the presented design (chapter [-@sec:design]) was fully implemented in the controller-runtime library in a generic way that allows reusing the mechanisms in all operators built upon the controller-runtime library.
+The webhosting operator makes use of the implemented sharding mechanisms in controller-runtime for demonstration and evaluation purposes. 
 
-When adding controller sharding to an operator based on controller-runtime, there are two places involved: when configuring the `Manager` and when setting up the sharded `Controller`.
-
-
+For adding controller sharding to an operator based on controller-runtime, there are two places involved: when configuring the `Manager` and when setting up the sharded `Controller`.
+First, sharding has to be enabled by setting `manager.Options.Sharded=true`.
+With this, the `Manager` is configured to maintain a shard lease while it is running.
+Furthermore, it adds a second cache to the `Manager` which uses a label selector `shard=<shard-id>` for all objects.
+This cache is supposed to be used by sharded controllers for starting filtered watches that only contain the objects that the shard is responsible for.
 
 - perspective of controller developer / outside of library
   - new fields on manager / manager options for sharding
   - builder: offers new options for configuring sharded controllers/objects
-- shard ID, lease attached to manager
-- sharded cache attached to manager (filtered )
 - lease controller once per manager
-- sharder controller added per sharded object
+- sharder controller added per sharded watch
 - reconciler wrapper
+- shard ID, shard mode
 
 ## Shard Lease
 
-- sharded runnables
+- explain sharded runnables
 - stopped when shard lease cannot be renewed
 
 ## Lease Controller
 
+- only runs in leader
 - explain shard states determined from shard leases
 - shard state label on leases
 - on shard failure, state label update basically triggers an event that the object sharder acts on
@@ -130,15 +132,17 @@ When adding controller sharding to an operator based on controller-runtime, ther
 
 ## Sharder Controller
 
+- only runs in leader
 - consistent hashing
 - ring constructed based on shard leases
 - ring cached, reconstructed on lease updates
-- 100 tokens per instance (similar to virtual nodes in cassandra), inspired by groupcache
+- 100 tokens per instance (similar to virtual nodes in cassandra), inspired by groupcache [@groupcache]
 - explain event handler, predicates, mappers
 
-## Reconciler Wrapper
+## Object Controller
 
-- injected for the reconciler of sharded controllers
+- runs under shard lease, i.e. in all instances
+- reconciler wrapper injected for the reconciler of sharded controllers
 - check shard label, discard object if not assigned to instance
 - remove drain label if present
 - explain event handler, predicates, mappers
