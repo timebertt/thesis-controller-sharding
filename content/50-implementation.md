@@ -91,31 +91,70 @@ A `Manager` is initialized and started once per operator as the root component a
 
 [^controller-runtime]: [https://github.com/kubernetes-sigs/controller-runtime](https://github.com/kubernetes-sigs/controller-runtime)
 
-Individual controllers can be implemented by creating a corresponding `Controller` construct and configuring a `Reconciler` and watches.
+Individual controllers can be implemented by creating a corresponding `Controller` construct and configuring a `Reconciler`, watches, and event handlers.
 The `Reconciler` contains the business logic of a controller.
 It is invoked with a reconciliation request containing an object's name and namespace.
 On each invocation, it has to ensure that the actual state of the system matches the desired state of the given object, i.e. perform reconciliation of the object.
-The configured watches and event handlers are responsible for enqueuing reconciliation requests in response to relevant watch event emitted by the API server.
-The `Controller` ensures that all other components like workqueue, cache and worker routines are correctly set up.
+The configured watches and event handlers are responsible for enqueuing reconciliation requests in response to watch events.
+Typically, `Predicates` are used to filter for relevant watch events emitted by the API server.
+The `Controller` itself ensures that all components including cache, event handlers, workqueue and worker routines are correctly set up.
 All `Controllers` are registered with the `Manager` which then ensures that the controllers are started when leader election is won and stopped as soon as leader election is lost.
 It also injects shared dependencies like client, cache and loggers into the individual controllers.
 
 As part of this thesis, the presented design (chapter [-@sec:design]) was fully implemented in the controller-runtime library in a generic way that allows reusing the mechanisms in all operators built upon the controller-runtime library.
 The webhosting operator makes use of the implemented sharding mechanisms in controller-runtime for demonstration and evaluation purposes. 
 
-For adding controller sharding to an operator based on controller-runtime, there are two places involved: when configuring the `Manager` and when setting up the sharded `Controller`.
+For adding controller sharding to an operator based on controller-runtime, there are two places involved: when configuring the `Manager` and when setting up a sharded `Controller`.
 First, sharding has to be enabled by setting `manager.Options.Sharded=true`.
 With this, the `Manager` is configured to maintain a shard lease while it is running.
 Furthermore, it adds a second cache to the `Manager` which uses a label selector `shard=<shard-id>` for all objects.
-This cache is supposed to be used by sharded controllers for starting filtered watches that only contain the objects that the shard is responsible for.
+This cache is then used by sharded controllers as a filtered cache that only contains objects that the shard is responsible for, hence it is referred to as sharded cache.
+In controller-runtime, the cache is empty on startup and watches are only started on-demand when the cache is read from.
+The `Manager`'s default cache (unfiltered) is still available for retrieval of non-sharded objects.
+However, as long as controllers use the correct cache when reading objects, watches will only be started in one cache for any `GroupVersionKind` and thus are filtered correctly.
+For development purposes, the shard ID can be overwritten optionally.
+Also, `ShardMode` allows configuring whether the manager should only run the sharder components (when leading), only the shard components or both (default).
+
+```go
+mgr, err := manager.New(restConfig, manager.Options{
+	// enable sharding for this manager
+	Sharded: true,
+	// optionally configure overwrites for development purposes
+	ShardID:   "custom-shard-id",
+	ShardMode: sharding.ModeSharder,
+})
+```
+
+: Configuring the controller-runtime manager for sharding {#lst:manager-setup}
+
+There are two sharder components: the lease controller and the sharder controllers.
+Both are added in all instances, but they are only running when the instance has acquired leadership.
+The lease controller is running only once per leader and is mainly responsible for acquiring leases of unavailable shards (see [-@sec:des-membership]).
+The sharder controllers are coupled to the setup of the sharded controllers themselves, though they only run in the leader.
+
+```go
+controller, err := builder.ControllerManagedBy(mgr).
+		For(&webhostingv1alpha1.Website{}, builder.Sharded{}).
+		// watch deployments in order to update phase on relevant changes
+		Owns(&appsv1.Deployment{}, builder.Sharded{}).
+		// watch themes to roll out theme changes to all referencing websites
+		Watches(
+			&source.Kind{Type: &webhostingv1alpha1.Theme{}},
+			handler.EnqueueRequestsFromMapFunc(r.MapThemeToWebsites),
+			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
+		).
+		Build(reconciler)
+```
+
+: Setup of a sharded controller {#lst:controller-setup}
+
 
 - perspective of controller developer / outside of library
   - new fields on manager / manager options for sharding
   - builder: offers new options for configuring sharded controllers/objects
-- lease controller once per manager
 - sharder controller added per sharded watch
+- builder injects client and cache that delegate correctly under the hood
 - reconciler wrapper
-- shard ID, shard mode
 
 ## Shard Lease
 
@@ -126,9 +165,11 @@ This cache is supposed to be used by sharded controllers for starting filtered w
 
 - only runs in leader
 - explain shard states determined from shard leases
-- shard state label on leases
+- maintains shard state label on leases for observability
+- acquires shard lease in state uncertain
+- deletes orphaned shard leases
 - on shard failure, state label update basically triggers an event that the object sharder acts on
-- explain event handler, predicates, mappers
+- (explain event handler, predicates, mappers)
 
 ## Sharder Controller
 
@@ -137,7 +178,7 @@ This cache is supposed to be used by sharded controllers for starting filtered w
 - ring constructed based on shard leases
 - ring cached, reconstructed on lease updates
 - 100 tokens per instance (similar to virtual nodes in cassandra), inspired by groupcache [@groupcache]
-- explain event handler, predicates, mappers
+- (explain event handler, predicates, mappers)
 
 ## Object Controller
 
@@ -145,7 +186,7 @@ This cache is supposed to be used by sharded controllers for starting filtered w
 - reconciler wrapper injected for the reconciler of sharded controllers
 - check shard label, discard object if not assigned to instance
 - remove drain label if present
-- explain event handler, predicates, mappers
+- (explain event handler, predicates, mappers)
 
 ## Observability
 

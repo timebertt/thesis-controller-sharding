@@ -50,7 +50,7 @@
             "text-color": "#60a0b0",
             "background-color": null,
             "bold": false,
-            "italic": true,
+            "italic": false,
             "underline": false
         },
         "CommentVar": {
