@@ -33,7 +33,7 @@ The operator and its resources are modelled to form a webhosting-like platform, 
 Websites reside in a project namespace, have a name, and specify a website theme, which defines color and font family.
 The desired state of websites is declared via Kubernetes resources and the operator manages the required webservers and exposes them to the internet.
 
-```yaml
+```{#lst:webhosting .yaml language=yaml}
 apiVersion: webhosting.timebertt.dev/v1alpha1
 kind: Theme
 metadata:
@@ -51,7 +51,7 @@ spec:
   theme: exciting
 ```
 
-: Example webhosting operator objects {#lst:webhosting}
+: Example webhosting operator objects
 
 Three API resources are involved when managing websites using the webhosting operator:
 

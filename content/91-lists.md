@@ -7,6 +7,7 @@
 
 \listoffigures
 \listoftables
+\lstlistoflistings
 \endgroup
 
 \newpage

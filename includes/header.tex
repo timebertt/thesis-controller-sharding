@@ -12,6 +12,7 @@
 %\usepackage[american]{babel}
 \selectlanguage{american}
 \input{hyphenex/ushyphex.tex}
+\usepackage{fontspec}
 
 % Calculations =======================================
 \usepackage{calc}
@@ -106,7 +107,7 @@
 \usepackage{collcell}
 \usepackage{makecell}
 \usepackage{colortbl}
-\usepackage{xcolor}
+\usepackage[svgnames]{xcolor}
 % ====================================================
 
 %% Use Links & Refs ==================================
@@ -133,7 +134,140 @@
 % anchorcolor = black]{hyperref}
 
 %% Code Blocks ========================================
-%\usepackage{listings}
+\usepackage{listings}
+\lstset{numberbychapter=false}
+
+% customize highlighting environments (set fancyvrb options)
+%\RecustomVerbatimEnvironment{Highlighting}{Verbatim}{
+%    frame=single,
+%    fontsize=\footnotesize,
+%    commandchars=\\\{\},
+%}
+
+\lstdefinelanguage{Go}{
+    % Keywords as defined in the language grammar
+    morekeywords=[1]{%
+        break,default,func,interface,select,case,defer,go,map,%
+        struct,chan,else,goto,package,switch,const,fallthrough,%
+        if,range,type, continue,for,import,return,var},
+    % Built-in functions
+    morekeywords=[2]{%
+        append,cap,close,complex,copy,delete,imag,%
+        len,make,new,panic,print,println,real,recover},
+    % Pre-declared types
+    morekeywords=[3]{%
+        bool,byte,complex64,complex128,error,float32,float64,%
+        int,int8,int16,int32,int64,rune,string,%
+        uint,uint8,uint16,uint32,uint64,uintptr},
+    % Constants and zero value
+    morekeywords=[4]{true,false,iota,nil},
+    % Strings : "foo", 'bar', `baz`
+    morestring=[b]{"},
+    morestring=[b]{'},
+    morestring=[b]{`},
+    % Comments : /* comment */ and // comment
+    comment=[l]{//},
+    morecomment=[s]{/*}{*/},
+    % Options
+    sensitive=true
+}
+
+\lstdefinelanguage{yaml}{
+%    % Keywords as defined in the language grammar
+%    morekeywords=[1]{%
+%        break,default,func,interface,select,case,defer,go,map,%
+%        struct,chan,else,goto,package,switch,const,fallthrough,%
+%        if,range,type, continue,for,import,return,var},
+%    % Built-in functions
+%    morekeywords=[2]{%
+%        append,cap,close,complex,copy,delete,imag,%
+%        len,make,new,panic,print,println,real,recover},
+%    % Pre-declared types
+%    morekeywords=[3]{%
+%        bool,byte,complex64,complex128,error,float32,float64,%
+%        int,int8,int16,int32,int64,rune,string,%
+%        uint,uint8,uint16,uint32,uint64,uintptr},
+    % Constants and zero value
+    morekeywords=[4]{true,false,null,y,n},
+    morestring=[b]{"},
+    morestring=[b]{'},
+    comment=[l]{\#},
+    morecomment=[s]{/*}{*/},
+    sensitive=false
+}
+
+%\newcommand\YAMLcolonstyle{\color{red}}
+%\newcommand\YAMLkeystyle{\color{black}}
+%\newcommand\YAMLvaluestyle{\color{blue}}
+%
+%\makeatletter
+%
+%% here is a macro expanding to the name of the language
+%% (handy if you decide to change it further down the road)
+%\newcommand\language@yaml{yaml}
+%
+%\expandafter\expandafter\expandafter\lstdefinelanguage
+%\expandafter{\language@yaml}
+%{
+%    keywords={true,false,null,y,n},
+%    keywordstyle=\color{darkgray},
+%    basicstyle=\ttfamily\footnotesize,                                 % assuming a key comes first
+%    sensitive=false,
+%    comment=[l]{\#},
+%    morecomment=[s]{/*}{*/},
+%    commentstyle=\color{purple},
+%    stringstyle=\YAMLvaluestyle,
+%    moredelim=[l][\color{orange}]{\&},
+%    moredelim=[l][\color{magenta}]{*},
+%    moredelim=**[il][\YAMLcolonstyle{:}\YAMLvaluestyle]{:},   % switch to value style at :
+%    morestring=[b]',
+%    morestring=[b]",
+%    literate =    {---}{{\textcolor{black}}}3
+%        {>}{{\textcolor{red}\textgreater}}1
+%        {|}{{\textcolor{red}\textbar}}1
+%        {\ -\ }{{\ -\ }}3,
+%}
+%
+%% switch to key style at EOL
+%\lst@AddToHook{EveryLine}{\ifx\lst@language\language@yaml\YAMLkeystyle\fi}
+%\makeatother
+
+
+\setmonofont{JetBrainsMono}[
+    Path=./pandoc/fonts/,
+    Scale=0.85,
+    Extension = .ttf,
+    UprightFont=*-Regular,
+    BoldFont=*-Bold,
+    ItalicFont=*-Italic,
+    BoldItalicFont=*-BoldItalic
+]
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{codebackground}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mycodestyle}{
+    backgroundcolor=\color{WhiteSmoke},
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,
+    breaklines=true,
+    captionpos=b,
+    keepspaces=true,
+    numbers=none,
+    numbersep=10pt,
+    showspaces=false,
+    showstringspaces=false,
+    showtabs=false,
+    tabsize=1
+}
+
+\lstset{style=mycodestyle}
 
 %% Quotes =============================================
 \usepackage[font=itshape,vskip=5pt]{quoting}

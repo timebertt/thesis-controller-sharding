@@ -47,7 +47,7 @@ This means, users declare the desired state of objects via the respective API re
 Changes to the desired state are accepted instantly without waiting for them to manifest in the system. 
 Controllers pick up the declared specification asynchronously and update the status of API objects while the actual state gradually converges with the desired state.
 
-```yaml
+```{#lst:deployment .yaml language=yaml}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -78,7 +78,7 @@ status:
   updatedReplicas: 1
 ```
 
-: Example API object {#lst:deployment}
+: Example API object
 
 \todo[inline]{Caption not working}
 
@@ -94,7 +94,7 @@ API objects can specify so-called owners in the `metadata.ownerReferences` field
 This is used by controllers for efficient mapping to owning objects.
 Furthermore, an API object is automatically deleted by the garbage collector controller once all referenced owners are gone.
 
-```yaml
+```{#lst:owner-reference .yaml language=yaml}
 apiVersion: apps/v1
 kind: ReplicaSet
 metadata:
@@ -110,7 +110,7 @@ metadata:
     uid: f4dc8f2d-075d-41b1-a511-0f44671cd5d0
 ```
 
-: Example owner reference {#lst:owner-reference}
+: Example owner reference
 
 Most API objects also contain `spec` and `status` sections.
 The `spec` section contains the user-declared desired state of the object, while the `status` section contains the state observed by the responsible controller.
@@ -202,7 +202,7 @@ As soon as CRDs are created, the Kubernetes API server starts serving endpoints 
 Although the API server doesn't know the concrete structure and meaning of the resources, it offers the exact same characteristics for such API objects.
 This includes the same object structure (metadata, spec and status), the same API request semantics (including watch requests), discovery endpoints, label selectors and so on. [@k8sdocs; @hausenblas2019programming]
 
-```yaml
+```{#lst:crd .yaml language=yaml}
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
@@ -227,7 +227,7 @@ spec:
         # ...
 ```
 
-: Example CustomResourceDefinition {#lst:crd}
+: Example CustomResourceDefinition
 
 By leveraging these mechanisms, the Kubernetes API can be extended to provide declarative management of arbitrary API resources.
 However, custom resources as such don't implement any corresponding business logic.
@@ -296,7 +296,7 @@ The leader election mechanism follows a simple protocol based on Kubernetes API 
 For this purpose, dedicated `Lease` objects are used, `Endpoints` and `ConfigMaps` were used historically.
 In these objects, a leader election record is persisted ([@lst:lease])\todo{not working}, that states the current leader as well as when the lease has been acquired and for how long it is valid.
 
-```yaml
+```{#lst:lease .yaml language=yaml}
 apiVersion: coordination.k8s.io/v1
 kind: Lease
 metadata:
@@ -313,7 +313,7 @@ spec:
   renewTime: "2022-06-16T08:56:17.146876Z"
 ```
 
-: Example Lease Object {#lst:lease}
+: Example Lease Object
 
 All instances carry a unique identity, composed of pod name and container ID or any other unique identifier for the instance's process.
 If there currently is no active leader, all instances try to create or update the respective object to specify their identity.

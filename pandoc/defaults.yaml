@@ -30,6 +30,7 @@ top-level-division: chapter
 resource-path:
 - "."
 - "assets"
+- "pandoc/fonts"
 
 eol: lf
 

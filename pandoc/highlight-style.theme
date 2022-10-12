@@ -19,7 +19,7 @@
             "underline": false
         },
         "Attribute": {
-            "text-color": "#7d9029",
+            "text-color": null,
             "background-color": null,
             "bold": false,
             "italic": false,
@@ -47,7 +47,7 @@
             "underline": false
         },
         "Comment": {
-            "text-color": "#60a0b0",
+            "text-color": "#898887",
             "background-color": null,
             "bold": false,
             "italic": false,
@@ -117,7 +117,7 @@
             "underline": false
         },
         "Function": {
-            "text-color": "#06287e",
+            "text-color": "#0032b3",
             "background-color": null,
             "bold": false,
             "italic": false,
@@ -152,14 +152,14 @@
             "underline": false
         },
         "Other": {
-            "text-color": "#007020",
+            "text-color": "#0032b3",
             "background-color": null,
             "bold": false,
             "italic": false,
             "underline": false
         },
         "Preprocessor": {
-            "text-color": "#bc7a00",
+            "text-color": null,
             "background-color": null,
             "bold": false,
             "italic": false,
@@ -180,7 +180,7 @@
             "underline": false
         },
         "String": {
-            "text-color": "#4070a0",
+            "text-color": "#067d16",
             "background-color": null,
             "bold": false,
             "italic": false,

@@ -21,7 +21,7 @@ variables:
   - linktoc=all
   # - hidelinks
 
-# listings: true
+listings: true
 pdf-engine: latexmk
 pdf-engine-opt:
 - "-xelatex"
