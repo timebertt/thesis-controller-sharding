@@ -33,7 +33,7 @@ The operator and its resources are modelled to form a webhosting-like platform, 
 Websites reside in a project namespace, have a name, and specify a website theme, which defines color and font family.
 The desired state of websites is declared via Kubernetes resources and the operator manages the required webservers and exposes them to the internet.
 
-```{#lst:webhosting .yaml language=yaml}
+```yaml
 apiVersion: webhosting.timebertt.dev/v1alpha1
 kind: Theme
 metadata:
@@ -51,7 +51,7 @@ spec:
   theme: exciting
 ```
 
-: Example webhosting operator objects
+: Example webhosting operator objects {#lst:webhosting}
 
 Three API resources are involved when managing websites using the webhosting operator:
 
@@ -117,11 +117,11 @@ Also, `ShardMode` allows configuring whether the manager should only run the sha
 
 ```go
 mgr, err := manager.New(restConfig, manager.Options{
-	// enable sharding for this manager
-	Sharded: true,
-	// optionally configure overwrites for development purposes
-	ShardID:   "custom-shard-id",
-	ShardMode: sharding.ModeSharder,
+  // enable sharding for this manager
+  Sharded: true,
+  // optionally configure overwrites for development purposes
+  ShardID:   "custom-shard-id",
+  ShardMode: sharding.ModeSharder,
 })
 ```
 
@@ -134,16 +134,16 @@ The sharder controllers are coupled to the setup of the sharded controllers them
 
 ```go
 controller, err := builder.ControllerManagedBy(mgr).
-		For(&webhostingv1alpha1.Website{}, builder.Sharded{}).
-		// watch deployments in order to update phase on relevant changes
-		Owns(&appsv1.Deployment{}, builder.Sharded{}).
-		// watch themes to roll out theme changes to all referencing websites
-		Watches(
-			&source.Kind{Type: &webhostingv1alpha1.Theme{}},
-			handler.EnqueueRequestsFromMapFunc(r.MapThemeToWebsites),
-			builder.WithPredicates(predicate.GenerationChangedPredicate{}),
-		).
-		Build(reconciler)
+  For(&webhostingv1alpha1.Website{}, builder.Sharded{}).
+  // watch deployments in order to update phase on relevant changes
+  Owns(&appsv1.Deployment{}, builder.Sharded{}).
+  // watch themes to roll out theme changes to all referencing websites
+  Watches(
+    &source.Kind{Type: &webhostingv1alpha1.Theme{}},
+    handler.EnqueueRequestsFromMapFunc(r.MapThemeToWebsites),
+    builder.WithPredicates(predicate.GenerationChangedPredicate{}),
+  ).
+  Build(reconciler)
 ```
 
 : Setup of a sharded controller {#lst:controller-setup}

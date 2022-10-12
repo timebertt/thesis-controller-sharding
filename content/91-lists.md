@@ -7,7 +7,8 @@
 
 \listoffigures
 \listoftables
-\lstlistoflistings
+\listoflistings
+\todo[inline]{Fix spacing}
 \endgroup
 
 \newpage

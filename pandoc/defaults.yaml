@@ -37,5 +37,6 @@ eol: lf
 filters:
 - ./filters/remove-date.sh
 - pandoc-crossref
+- ./filters/pandoc-minted.py
 - citeproc
 
