@@ -1,5 +1,12 @@
 # Evaluation {#sec:evaluation}
 
+## Observability
+
+- webhosting-exporter
+- kube-state-metrics, kube-prometheus, Grafana
+- metrics for sharding: shard sizes, sharder actions, ring calculations
+- visualization: dashboards
+
 ## Experiment Setup
 
 - describe measurements
