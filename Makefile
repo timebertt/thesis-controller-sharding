@@ -62,15 +62,7 @@ install-requirements:
 
 .PHONY: install-python-requirements
 install-python-requirements:
-	@if ! python3 -m pip show matplotlib >/dev/null ; then \
-		python3 -m pip install matplotlib~=3.3 ; \
-	fi
-	@if ! python3 -m pip show pandocfilters >/dev/null ; then \
-		python3 -m pip install pandocfilters~=1.5 ; \
-	fi
-	@if ! python3 -m pip show Pygments >/dev/null ; then \
-		python3 -m pip install Pygments~=2.13 ; \
-	fi
+	@true
 
 .PHONY: count-words
 count-words:
