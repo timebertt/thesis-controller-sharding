@@ -4,6 +4,8 @@
 
 Get the current PDF by clicking the badge above️, navigating to the latest build and downloading the `paper` artifact.
 
+You can find the implementation that was done as part of this thesis in the repository [kubernetes-controller-sharding](https://github.com/timebertt/kubernetes-controller-sharding).
+
 ## Abstract
 
 TBA

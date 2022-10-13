@@ -54,7 +54,7 @@ To decrease sensitivity of the system, the sharder waits for another `leaseDurat
 If the shard comes available again by renewing its lease it is considered ready again.
 If the shard fails to renew its lease though, the sharder considers the instance unavailable.
 However, before it removing the instance from partitioning, it tries to acquire the shard lease once.
-This is done to ensure the API server is functioning well and the sharder doesn't act on stale lease data.
+This is done to ensure the API server is functioning and the sharder doesn't act on stale lease data.
 If the sharder is able to acquire the shard lease, it considers the instance dead, removes it from partitioning and moves objects to available instances.
 Afterwards, the sharder doesn't touch the shard lease anymore.
 With this, the shard is allowed to acquire its lease once it comes up again after the lease duration set by the sharder has passed.

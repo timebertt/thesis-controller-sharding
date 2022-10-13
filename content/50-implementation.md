@@ -163,6 +163,7 @@ The next sections explain implementation of the different components in more det
 When configured for sharding, the manager keeps performing leader election ([-@sec:leader-election]) and runs the sharder components only when it has successfully acquired leadership.
 In addition to that, the manager also maintains the individual shard lease ([-@sec:des-membership]).
 The mechanism executes the same leader election code, however with an individual lease name.
+For shard leases, the instance's hostname is used for both the lease name and holder identity.
 As long as the manager is able to renew the shard lease it keeps running the sharded controllers.
 
 When adding controllers or other `Runnables` to a manager via `manager.Add` they can signal whether they need to run under leader election or not by implementing the `LeaderElectionRunnable` interface.
@@ -181,25 +182,36 @@ type ShardedRunnable interface {
 
 When creating a sharded controller using the builder, the manager recognizes the `SharedRunnable` implementation and starts it as soon as the shard lease has been acquired even if the instance is currently not the leader.
 Similar to usual leader election, the manager process exits immediately when it fails to renew its shard lease.
+When the manager is stopped, it engages a graceful termination procedure and releases its shard lease to signal voluntary disruption, i.e. sets `spec.holderIdentity=null`.
 
 ## Lease Controller {#sec:impl-lease-controller}
 
-- only runs in leader
-- explain shard states determined from shard leases
-- maintains shard state label on leases for observability
-- acquires shard lease in state uncertain
-- deletes orphaned shard leases
-- on shard failure, state label update basically triggers an event that the object sharder acts on
-- (explain event handler, predicates, mappers)
+The lease controller watches the shard leases that individual instances maintain.
+For a given shard lease, it first determines the instance's state and then adds the state to the lease object as the `state` label for observability purposes.
+The shard states are defined by the following rules:
+
+- `Ready`: the lease is held by the shard itself (`metadata.name` is equal to the `holderIdentity`) and has not expired (`renewTime + leaseDurationSeconds` has not passed yet)
+- `Expired`: the lease is held by the shard but has expired up to `leaseDurationSeconds` ago 
+- `Uncertain`: the lease is held by the shard and has expired more than `leaseDurationSeconds` ago
+- `Dead`: the lease is not held by the shard anymore, either because the shard released its lease or it was acquired by the sharder (lease controller)
+- `Orphaned`: the lease is in state `Dead` and has expired at least 1 minute ago
+
+The main responsibility of the lease controller is to act on leases of unavailable shards.
+Once shard leases transition to state `Uncertain`, it acquires the lease by setting `holderIdentity` to `sharder`.
+For this, it uses a `leaseDuration` twice as long as the `leaseDuration` of the shard.
+Acquiring the shard lease is done to ensure the API server is functioning before removing the shard from partitioning (see [-@sec:des-membership]).
+Additionally, the lease controller deletes shard leases in state `Orphaned` to not pollute the system.
+The shard controller reconciles leases as soon as its state changes, either because of a create/update event or because one of the relevant durations has passed.
 
 ## Sharder Controllers {#sec:impl-sharder-controllers}
 
 - only runs in leader
 - consistent hashing
-- ring constructed based on shard leases
+- ring constructed based on shard leases (explain states)
 - ring cached, reconstructed on lease updates
 - 100 tokens per instance (similar to virtual nodes in cassandra), inspired by groupcache [@groupcache]
 - (explain event handler, predicates, mappers)
+- on shard failure, state label update basically triggers an event that the sharder controller acts on
 
 ## Object Controller {#sec:impl-object-controller}
 
