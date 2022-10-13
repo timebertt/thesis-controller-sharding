@@ -256,10 +256,6 @@ The calculated partition key is then used to determine the desired shard for the
 
 ```go
 func (r *Ring) Hash(key string) string {
-	if r.IsEmpty() {
-		return ""
-	}
-
 	// Hash key and walk the ring until we find the next virtual node
 	h := r.hash([]byte(key))
 
@@ -284,9 +280,47 @@ However, if the object is already assigned to a different shard, the sharder con
 
 ## Object Controller {#sec:impl-object-controller}
 
-- runs under shard lease, i.e. in all instances (sharded runnable)
-- delegated sharded cache/client injected
-- reconciler wrapper injected for the reconciler of sharded controllers
-- check shard label, discard object if not assigned to instance
-- remove drain label if present
-- (explain event handler, predicates, mappers)
+The actual sharded controller is modified by the builder to handle the sharding mechanisms.
+First, the controller implements the `ShardedRunnable` interface so that all instances run the controller instead of only the leader.
+Also, the builder constructs a cache that automatically delegates all read operations to either the sharded (filtered) cache or unfiltered cache according to whether they are configured to be sharded or not.
+This cache is injected into the object controller instead of the unfiltered cache.
+With this, the sharded controller automatically uses the filtered cache as desired while it is still able to read other non-sharded objects.
+
+Furthermore, the builder makes sure that the controller respects the shard assignments and acknowledges drain operations.
+This is done by wrapping the actual reconciler with another generic reconciler.
+On each reconciliation, it checks if the object is still assigned to the respective shard by reading the `shard` label.
+If the object is not assigned to the shard anymore, it is discarded.
+Before delegating reconciliation requests to the actual reconciler, it also checks the `drain` label.
+In case the `drain` label is present, the controller removes both the `shard` and `drain` label from the object and stops reconciling it.
+Lastly, the controller's predicates are adjusted to immediately react to events in which the object has the `drain` label.
+This effectively allows setting up a sharded controller without changes to the controller's code.
+
+```go
+func (r *Reconciler) Reconcile(ctx context.Context, request reconcile.Request) (reconcile.Result, error) {
+  // read object from cache...
+  labels := obj.GetLabels()
+  if shard, ok := labels[sharding.ShardLabel]; !ok || shard != r.ShardID {
+    // forget object
+    return reconcile.Result{}, nil
+  }
+
+  if _, drain := labels[sharding.DrainLabel]; drain {
+    // acknowledge drain operation
+    patch := client.MergeFromWithOptions(obj.DeepCopyObject().(client.Object), client.MergeFromWithOptimisticLock{})
+    delete(labels, sharding.ShardLabel)
+    delete(labels, sharding.DrainLabel)
+    
+    if err := r.client.Patch(ctx, obj, patch); err != nil {
+      return reconcile.Result{}, fmt.Errorf("error draining object: %w", err)
+    }
+
+    // forget object
+    return reconcile.Result{}, nil
+  }
+
+  // we are responsible, reconcile object
+  return r.Do.Reconcile(ctx, request)
+}
+```
+
+: Wrapping reconciler for sharded controllers (simplified) {#lst:wrapping-reconciler}
