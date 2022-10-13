@@ -26,9 +26,9 @@ pdf-engine: latexmk
 pdf-engine-opt:
 - "-xelatex"
 - "-r"
-- ".latexmkrc"
+- "pandoc/.latexmkrc"
 - "-g"
 - "-outdir=output-tex"
 
 include-in-header:
-- includes/header.tex
+- pandoc/includes/header.tex

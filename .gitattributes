@@ -1,5 +1,4 @@
 assets/* filter=lfs diff=lfs merge=lfs -text
-logo/* filter=lfs diff=lfs merge=lfs -text
 results/*.pdf filter=lfs diff=lfs merge=lfs -text
 pandoc/fonts/*.ttf filter=lfs diff=lfs merge=lfs -text
 paper-final.pdf filter=lfs diff=lfs merge=lfs -text

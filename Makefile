@@ -2,7 +2,7 @@ BUILDDIR := build
 MD_IN := content/*.md
 HTML := $(BUILDDIR)/paper.html
 PDF := $(BUILDDIR)/paper.pdf
-METADATA := metadata.yaml
+METADATA := pandoc/metadata.yaml
 PLOTS_DIR := results
 PLOT_CSV_FILES := $(wildcard $(PLOTS_DIR)/*-plot.csv)
 PLOT_PDF_FILES := $(patsubst $(PLOTS_DIR)/%-plot.csv,$(PLOTS_DIR)/%.pdf,$(PLOT_CSV_FILES))
@@ -66,4 +66,4 @@ install-python-requirements:
 
 .PHONY: count-words
 count-words:
-	@pandoc --lua-filter ./filters/count-words.lua $(MD_IN)
+	@pandoc --lua-filter ./pandoc/filters/count-words.lua $(MD_IN)

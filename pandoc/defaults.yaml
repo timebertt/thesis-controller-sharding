@@ -3,8 +3,8 @@ from: markdown+link_attributes+native_divs+raw_tex+tex_math_dollars+inline_code_
 metadata:
   link-citations: true
   link-bibliography: true
-  bibliography: bibliography.bib
-  csl: ieee.csl
+  bibliography: content/bibliography.bib
+  csl: pandoc/ieee.csl
 
   # pandoc-crossref options
   chapters: true
@@ -35,8 +35,8 @@ resource-path:
 eol: lf
 
 filters:
-- ./filters/remove-date.sh
+- ./pandoc/filters/remove-date.sh
 - pandoc-crossref
-- ./filters/pandoc-minted.py
+- ./pandoc/filters/pandoc-minted.py
 - citeproc
 
