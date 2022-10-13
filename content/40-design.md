@@ -106,7 +106,7 @@ Reconciliations of new object might however be delayed by a short period of time
 As there are multiple instances of the sharder controller in stand-by, handover should generally happen quickly.
 Also, handover can be sped up by releasing the leader election lease on voluntary step down.
 
-## Preventing Concurrency
+## Preventing Concurrency {#sec:des-concurrency}
 
 With the presented design, concurrent writes from different instances to the same API object are already prevented as long as object assignments don't change.
 To fulfill requirement \ref{req:concurrency} concurrent mutating reconciliations must additionally be prevented when moving objects between shards. 

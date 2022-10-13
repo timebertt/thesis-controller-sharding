@@ -205,13 +205,82 @@ The shard controller reconciles leases as soon as its state changes, either beca
 
 ## Sharder Controllers {#sec:impl-sharder-controllers}
 
-- only runs in leader
-- consistent hashing
-- ring constructed based on shard leases (explain states)
-- ring cached, reconstructed on lease updates
-- 100 tokens per instance (similar to virtual nodes in cassandra), inspired by groupcache [@groupcache]
-- (explain event handler, predicates, mappers)
-- on shard failure, state label update basically triggers an event that the sharder controller acts on
+For every sharded object kind, the controller builder adds a sharder controller that runs under leader election.
+It is responsible for assigning the sharded objects to available shards by setting the `shard` label based on the shard state information.
+For this, it starts a lightweight metadata-only watch on the respective object kind.
+As soon as objects are created or need to be re-assigned the controller performs reconciliation.
+Additionally, it watches leases and enqueues relevant sharded objects when a shard's availability changes.
+
+On every reconciliation, the controller lists all shard leases from the cache.
+It then constructs a hash ring including all shards that are not in state `Dead` or `Orphaned`.
+As this operation is executed for every sharder reconciliation, it is saved for reuse in a dedicated cache that is shared across all sharder controller belonging to a given sharded controller.
+The cached ring is recalculated when a lease is updated.
+In the hash ring, 100 tokens are added per shard by default for better distribution of objects across a low number of shards (inspired by groupcache [@groupcache]).
+
+```go
+type Hash func(data []byte) uint64
+
+type Ring struct {
+	hash          Hash // defaults to 64-bit implementation of xxHash (XXH64)
+	tokensPerNode int  // defaults to 100
+
+	tokens      []uint64
+	tokenToNode map[uint64]string
+}
+
+func (r *Ring) AddNodes(nodes ...string) {
+	for _, node := range nodes {
+		for i := 0; i < r.tokensPerNode; i++ {
+			t := r.hash([]byte(fmt.Sprintf("%s-%d", node, i)))
+			r.tokens = append(r.tokens, t)
+			r.tokenToNode[t] = node
+		}
+	}
+
+	// sort all tokens on the ring for binary searches
+	sort.Slice(r.tokens, func(i, j int) bool {
+		return r.tokens[i] < r.tokens[j]
+	})
+}
+```
+
+: Adding shards to the hash ring {#lst:ring-add}
+
+After retrieving the hash ring, the object is mapped to a partition key.
+For the main object kind of sharded controllers, the partition key follows this pattern:
+
+`<kind>.<group>/<namespace>/<name>/<uid>`
+
+For any owned objects of the main object kind, the partition key of the owner is calculated using the object's owner references.
+The calculated partition key is then used to determine the desired shard for the object by hashing the key onto the hash ring.
+
+```go
+func (r *Ring) Hash(key string) string {
+	if r.IsEmpty() {
+		return ""
+	}
+
+	// Hash key and walk the ring until we find the next virtual node
+	h := r.hash([]byte(key))
+
+	// binary search
+	i := sort.Search(len(r.tokens), func(i int) bool {
+		return r.tokens[i] >= h
+	})
+
+	// walked the whole ring
+	if i == len(r.tokens) {
+		i = 0
+	}
+
+	return r.tokenToNode[r.tokens[i]]
+}
+```
+
+: Consistent hashing of object keys {#lst:ring-hash}
+
+If the object is not assigned yet, the sharder controller simply patches the object's `shard` label to the desired shard.
+However, if the object is already assigned to a different shard, the sharder controller first adds the `drain` label to object in order to wait for acknowledgment by the current shard (see [-@sec:des-concurrency]).
 
 ## Object Controller {#sec:impl-object-controller}
 
