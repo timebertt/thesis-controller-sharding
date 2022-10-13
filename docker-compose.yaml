@@ -8,5 +8,6 @@ services:
     - "while true; do sleep 2; done"
     stdin_open: true
     tty: true
+    cpu_count: 8
     volumes:
     - ".:/data"

@@ -106,7 +106,7 @@ The webhosting operator makes use of the implemented sharding mechanisms in cont
 
 For adding controller sharding to an operator based on controller-runtime, there are two places involved: when configuring the `Manager` and when setting up a sharded `Controller`.
 First, sharding has to be enabled by setting `manager.Options.Sharded=true`.
-With this, the `Manager` is configured to maintain a shard lease while it is running.
+With this, the `Manager` is configured to maintain a shard lease while it is running ([-@sec:impl-shard-lease]).
 Furthermore, it adds a second cache to the `Manager` which uses a label selector `shard=<shard-id>` for all objects.
 This cache is then used by sharded controllers as a filtered cache that only contains objects that the shard is responsible for, hence it is referred to as sharded cache.
 In controller-runtime, the cache is empty on startup and watches are only started on-demand when the cache is read from.
@@ -129,7 +129,7 @@ mgr, err := manager.New(restConfig, manager.Options{
 
 There are two sharder components: the lease controller and the sharder controllers.
 Both are added in all instances, but they are only running when the instance has acquired leadership.
-The lease controller is running only once per leader and is mainly responsible for acquiring leases of unavailable shards (see [-@sec:des-membership]).
+The lease controller ([-@sec:impl-lease-controller]) is running only once per leader and is mainly responsible for acquiring leases of unavailable shards (see [-@sec:des-membership]).
 The sharder controllers are coupled to the setup of the sharded controllers themselves, though they only run in the leader.
 
 ```go
@@ -148,20 +148,22 @@ controller, err := builder.ControllerManagedBy(mgr).
 
 : Setup of a sharded controller {#lst:controller-setup}
 
+For setting up a sharded controller, the `builder` package must be used.
+With this, sharded controllers are configured like normal controllers however with an additional `builder.Sharded` option.
+This option is supplied to the controller's main object type (in `For`) and all additional object types that should be sharded (in `Owns` and `Watches`).
+When setting the `Sharded` option, the builder performs the following tasks:
 
-- perspective of controller developer / outside of library
-  - new fields on manager / manager options for sharding
-  - builder: offers new options for configuring sharded controllers/objects
-- sharder controller added per sharded watch
-- builder injects client and cache that delegate correctly under the hood
-- reconciler wrapper
+- it adds a sharder controller ([-@sec:impl-sharder-controllers]) for the corresponding `GroupVersionKind`
+- it modifies the actual controller ([-@sec:impl-object-controller]) to properly handle the sharding mechanisms
 
-## Shard Lease
+The next sections explain implementation of the different components in more detail.
+
+## Shard Lease {#sec:impl-shard-lease}
 
 - explain sharded runnables
 - stopped when shard lease cannot be renewed
 
-## Lease Controller
+## Lease Controller {#sec:impl-lease-controller}
 
 - only runs in leader
 - explain shard states determined from shard leases
@@ -171,7 +173,7 @@ controller, err := builder.ControllerManagedBy(mgr).
 - on shard failure, state label update basically triggers an event that the object sharder acts on
 - (explain event handler, predicates, mappers)
 
-## Sharder Controller
+## Sharder Controllers {#sec:impl-sharder-controllers}
 
 - only runs in leader
 - consistent hashing
@@ -180,9 +182,10 @@ controller, err := builder.ControllerManagedBy(mgr).
 - 100 tokens per instance (similar to virtual nodes in cassandra), inspired by groupcache [@groupcache]
 - (explain event handler, predicates, mappers)
 
-## Object Controller
+## Object Controller {#sec:impl-object-controller}
 
-- runs under shard lease, i.e. in all instances
+- runs under shard lease, i.e. in all instances (sharded runnable)
+- delegated sharded cache/client injected
 - reconciler wrapper injected for the reconciler of sharded controllers
 - check shard label, discard object if not assigned to instance
 - remove drain label if present
