@@ -285,7 +285,7 @@ Generally, controllers need to be level-driven, meaning their actions should be 
 However, controllers are typically edge-triggered for increasing scalability of the system and reducing unnecessary work and network transfer.
 Therefore, they use API server watches instead of long-pulling.
 
-## Leader Election
+## Leader Election {#sec:leader-election}
 
 There might be multiple instances of a single controller binary, e.g., during rolling updates or in HA-setups.
 In order to prevent conflicting actions of multiple instances, one instance is elected to be the active one -- the leader.

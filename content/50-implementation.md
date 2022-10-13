@@ -160,8 +160,27 @@ The next sections explain implementation of the different components in more det
 
 ## Shard Lease {#sec:impl-shard-lease}
 
-- explain sharded runnables
-- stopped when shard lease cannot be renewed
+When configured for sharding, the manager keeps performing leader election ([-@sec:leader-election]) and runs the sharder components only when it has successfully acquired leadership.
+In addition to that, the manager also maintains the individual shard lease ([-@sec:des-membership]).
+The mechanism executes the same leader election code, however with an individual lease name.
+As long as the manager is able to renew the shard lease it keeps running the sharded controllers.
+
+When adding controllers or other `Runnables` to a manager via `manager.Add` they can signal whether they need to run under leader election or not by implementing the `LeaderElectionRunnable` interface.
+For example, controllers implement this interface by default to always run with leader election.
+A new interface is introduced to distinguish between usual and sharded controllers: `ShardedRunnable`.
+
+```go
+// ShardedRunnable knows if a Runnable needs to be run in the sharded mode.
+type ShardedRunnable interface {
+	// IsSharded returns true if the Runnable needs to be run in the sharded mode.
+	IsSharded() bool
+}
+```
+
+: The ShardedRunnable interface {#lst:sharded-runnable}
+
+When creating a sharded controller using the builder, the manager recognizes the `SharedRunnable` implementation and starts it as soon as the shard lease has been acquired even if the instance is currently not the leader.
+Similar to usual leader election, the manager process exits immediately when it fails to renew its shard lease.
 
 ## Lease Controller {#sec:impl-lease-controller}
 
