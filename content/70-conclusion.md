@@ -11,6 +11,7 @@
 
 ## Future Work
 
+- evaluate performance impact on API server and etcd, [@tbl:scaling-resources-server]
 - movement on rolling updates, idea: StatefulSet could be used for stable hostname to minimize movements during rolling updates
 - dynamic scaling up and down
   - e.g. targeted queue wait duration, sharding size, active/idle workers

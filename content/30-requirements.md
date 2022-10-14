@@ -15,6 +15,7 @@ I.e., as of now, Kubernetes controllers are not horizontally scalable.
 
 In order to understand what is required for scaling Kubernetes controllers horizontally, it's important to note which resource dimensions are relevant for scaling.
 Generally speaking, the following resource requirements increase with the controller's capacity and throughput:
+\todo{define capacity, throughput}
 
 +------------------+------------------------------------------------------------+
 | resource         | depends on                                                 |
@@ -51,14 +52,14 @@ Additionally, scaling controllers increases the resource footprint of the API se
 | disk I/O         | rate and size of API objects read from and written to disk |
 +------------------+------------------------------------------------------------+
 
-: Resource implications on API server and etcd
+: Resource implications on API server and etcd {#tbl:scaling-resources-server}
 
 However, this study project focuses on scalability of the controller-side only.
 Scalability limitations and implications of the control plane is out of scope of this thesis.
 
 ## Requirements for Horizontal Scalability {#sec:requirements}
 
-To scale Kubernetes controllers horizontally the restriction of having only a single active instance at any given time needs to be lifted.
+To scale Kubernetes controllers horizontally\todo{more precise, ref} the restriction of having only a single active instance at any given time needs to be lifted.
 For this, a concept of sharding for API objects must be introduced which distributes ownership of different objects across multiple instances.
 Nevertheless, it must still be prevented that multiple instances own a single API object at the same time or act on it concurrently.
 
