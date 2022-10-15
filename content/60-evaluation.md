@@ -2,6 +2,8 @@
 
 ## Monitoring
 
+![Test Plot](../results/test.pdf)
+
 - monitoring needed for observing and evaluation
 - introduce setup with different components
 - webhosting-exporter
