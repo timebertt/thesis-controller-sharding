@@ -1,3 +1,4 @@
 /build
 /output-tex
 .idea
+/results/*.pdf
