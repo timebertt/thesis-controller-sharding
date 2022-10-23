@@ -2,3 +2,4 @@
 /output-tex
 .idea
 /results/*.pdf
+__pycache__

@@ -3,9 +3,12 @@ MD_IN := content/*.md
 HTML := $(BUILDDIR)/paper.html
 PDF := $(BUILDDIR)/paper.pdf
 METADATA := pandoc/metadata.yaml
-PLOTS_DIR := results
-PLOT_PY_FILES  := $(wildcard $(PLOTS_DIR)/*-plot.py)
-PLOT_PDF_FILES := $(patsubst $(PLOTS_DIR)/%-plot.py,$(PLOTS_DIR)/%.pdf,$(PLOT_PY_FILES))
+
+PLOTS_DIR             := results
+PLOT_CSV_FILES        := $(wildcard $(PLOTS_DIR)/*.csv $(PLOTS_DIR)/*/*.csv)
+PLOT_PY_FILES         := $(wildcard $(PLOTS_DIR)/*-plot.py)
+PLOT_COMMON_PY_FILES  := $(filter-out $(PLOT_PY_FILES),$(wildcard $(PLOTS_DIR)/*.py))
+PLOT_PDF_FILES        := $(patsubst $(PLOTS_DIR)/%-plot.py,$(PLOTS_DIR)/%.pdf,$(PLOT_PY_FILES))
 
 all: html pdf
 
@@ -44,7 +47,7 @@ open-html:
 
 plots: $(PLOT_PDF_FILES)
 
-$(PLOTS_DIR)/%.pdf: $(PLOTS_DIR)/%-plot.py $(PLOTS_DIR)/%-*.csv
+$(PLOTS_DIR)/%.pdf: $(PLOTS_DIR)/%-plot.py $(PLOT_COMMON_PY_FILES) $(PLOT_CSV_FILES)
 	@echo "> Plotting $(@F)"
 	@cd $(<D); ./$(<F)
 

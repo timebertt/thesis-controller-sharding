@@ -1,0 +1,19 @@
+# scenario: base
+# - sharded: start `2022-10-19T17:42:15+02:00`, end `2022-10-19T17:57:45+02:00`
+# - non-sharded: start `2022-10-19T18:14:09+02:00`, end `2022-10-19T18:29:39+02:00`
+queries:
+- name: websites_per_shard
+  query: sum(kube_website_shard{shard!=""} or 0*sum(kube_shard_info{app="webhosting-operator"}) by (shard)) by (shard)
+  optional: true
+- name: websites_per_project
+  query: sum(kube_website_info{} or 0*sum(kube_namespace_status_phase{namespace=~"project-.+"}) by (namespace)) by (namespace)
+- name: websites_per_theme
+  query: sum(kube_website_info{} or 0*sum(kube_theme_info{}) by (theme)) by (theme)
+- name: cpu
+  query: sum(rate(container_cpu_usage_seconds_total{namespace="webhosting-system", container="manager"}[2m])) by (pod)
+- name: memory
+  query: sum(container_memory_rss{namespace="webhosting-system", container="manager"}) by (pod)
+- name: network_receive
+  query: sum(irate(container_network_receive_bytes_total{namespace="webhosting-system", pod=~"webhosting-operator-.+"}[2m])) by (pod)
+- name: network_transmit
+  query: sum(irate(container_network_transmit_bytes_total{namespace="webhosting-system", pod=~"webhosting-operator-.+"}[2m])) by (pod)

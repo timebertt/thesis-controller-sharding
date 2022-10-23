@@ -2,7 +2,7 @@
 
 ## Monitoring
 
-![Test Plot](../results/test.pdf)
+![Test Plot](../results/base-cpu.pdf)
 
 - monitoring needed for observing and evaluation
 - introduce setup with different components
