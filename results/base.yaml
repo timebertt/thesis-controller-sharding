@@ -1,6 +1,6 @@
 # scenario: base
-# - sharded: start `2022-10-19T17:42:15+02:00`, end `2022-10-19T17:57:45+02:00`
-# - non-sharded: start `2022-10-19T18:14:09+02:00`, end `2022-10-19T18:29:39+02:00`
+# measure -o results/base results/base.yaml --output-prefix sharded- --start 2022-10-24T09:30:49+02:00 --end 2022-10-24T09:43:49+02:00
+# measure -o results/base results/base.yaml --output-prefix singleton- --start 2022-10-24T08:24:27+02:00 --end 2022-10-24T08:37:27+02:00
 queries:
 - name: websites_per_shard
   query: sum(kube_website_shard{shard!=""} or 0*sum(kube_shard_info{app="webhosting-operator"}) by (shard)) by (shard)
