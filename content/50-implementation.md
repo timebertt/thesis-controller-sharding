@@ -82,6 +82,8 @@ Furthermore, the controller watches all available `Themes` and enqueues all `Web
 With this, changes to `Themes` are immediately rolled out to all `Websites` that use them.
 Also, `Website` reconciliations are very short, making the controller responsive and scalable.
 
+\todo[inline]{controller can be manually triggered by annotation change}
+
 ## Architecture
 
 The webhosting operator is leveraging the controller-runtime[^controller-runtime] library.
@@ -277,6 +279,7 @@ func (r *Ring) Hash(key string) string {
 
 If the object is not assigned yet, the sharder controller simply patches the object's `shard` label to the desired shard.
 However, if the object is already assigned to a different shard, the sharder controller first adds the `drain` label to object in order to wait for acknowledgment by the current shard (see [-@sec:des-concurrency]).
+\todo[inline]{drain is only done for main object kind}
 
 ## Object Controller {#sec:impl-object-controller}
 

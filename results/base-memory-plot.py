@@ -32,5 +32,5 @@ data.plot(
 )
 
 plt.ylim(bottom=0)
-plt.suptitle('Memory Usage per Pod', weight='bold')
+# plt.suptitle('Memory Usage per Pod', weight='bold')
 plt.savefig('base-memory.pdf', bbox_inches='tight')

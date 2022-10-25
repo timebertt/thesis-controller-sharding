@@ -59,5 +59,5 @@ data.plot(
 )
 
 plt.ylim(bottom=0)
-plt.suptitle('Network Bandwidth per Pod', weight='bold')
+# plt.suptitle('Network Bandwidth per Pod', weight='bold')
 plt.savefig('base-network.pdf', bbox_inches='tight')

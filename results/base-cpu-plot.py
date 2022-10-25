@@ -29,5 +29,5 @@ data.plot(
 )
 
 plt.ylim(bottom=0)
-plt.suptitle('CPU Usage per Pod', weight='bold')
+# plt.suptitle('CPU Usage per Pod', weight='bold')
 plt.savefig('base-cpu.pdf', bbox_inches='tight')

@@ -11,8 +11,13 @@
 
 ## Future Work
 
+- optimizations
+  - run sharder as separate deployment
+  - perform initial assignments in webhook
 - evaluate performance impact on API server and etcd, [@tbl:scaling-resources-server]
-- movement on rolling updates, idea: StatefulSet could be used for stable hostname to minimize movements during rolling updates
+- movement on rolling updates
+  - idea: StatefulSet could be used for stable hostname to minimize movements during rolling updates
+  - idea: smoothen rolling updates by specifying `minReadySeconds`
 - dynamic scaling up and down
   - e.g. targeted queue wait duration, sharding size, active/idle workers
   - HPA on custom metrics

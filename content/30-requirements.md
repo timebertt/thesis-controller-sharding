@@ -16,6 +16,7 @@ I.e., as of now, Kubernetes controllers are not horizontally scalable.
 In order to understand what is required for scaling Kubernetes controllers horizontally, it's important to note which resource dimensions are relevant for scaling.
 Generally speaking, the following resource requirements increase with the controller's capacity and throughput:
 \todo{define capacity, throughput}
+\todo{define singleton controller}
 
 +------------------+------------------------------------------------------------+
 | resource         | depends on                                                 |
