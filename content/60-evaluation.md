@@ -35,16 +35,41 @@ With this, websites are not functional but have a low memory footprint without a
 
 ## Monitoring
 
-- monitoring needed for observing and evaluation
-- introduce setup with different components
-  - kube-state-metrics, kube-prometheus, Grafana
-  - cadvisor, prometheus
-  - webhosting-exporter
-- metrics for sharding: shard sizes, sharder actions, ring calculations
-- controller metrics: queue length, reconciliation time
-- visualization: dashboards
-- network metrics include metrics scraping!
-- explain measure tool
+For observing and measuring the implementation, a monitoring setup is deployed in the Kubernetes cluster in addition to the webhosting operator itself.
+The monitoring setup serves two purposes: for general evaluation that the sharded controllers are working as desired and for providing accurate measurements of operator's resource usage.
+
+The deployed monitoring setup is based on kube-prometheus[^kube-prometheus], which is a collection of monitoring tools and configuration for Kubernetes clusters.
+Most importantly, it includes a Prometheus [@promdocs] instance which collects metrics for containers running on the cluster and metrics about the state of Kubernetes API objects.
+Container metrics are scraped from the kubelet's cadvisor endpoint [@k8sdocs], kube-state-metrics[^kube-state-metrics] is used as an exporter for metrics about API objects.
+Furthermore, the setup includes a Grafana [@grafanadocs] instance, which visualizes the metrics collected by prometheus in different dashboards.
+
+![Webhosting dashboard](../assets/dashboard-webhosting.png)
+
+In addition to the components included in kube-prometheus, the webhosting exporter[^webhosting-exporter] is deployed which exposes metrics about the state of websites.
+It is implemented using the kube-state-metrics library and complements the metrics offered by kube-state-metrics by adding similar metrics about the webhosting operator's API objects.
+For example, one metric indicates the websites' phase, another one states which shard websites are assigned to.
+Additionally, the webhosting exporter is used to collect metrics about the state of the operator's shards, which is determined from the individual shard leases.
+
+![Sharding dashboard](../assets/dashboard-sharding.png)
+
+Finally, Prometheus is configured to collect metrics from the webhosting operator as well.
+It exposes metrics from the controller-runtime library about controllers, workqueues, and the Kubernetes client.
+E.g., these metrics offer information on the rate and duration of reconciliations, and how long objects are queued before being reconciled.
+Additionally, metrics have been added about the sharder controllers' actions, i.e. assignment and drain operations.
+
+![Controller-runtime dashboard](../assets/dashboard-controller-runtime.png)
+
+
+- webhosting-exporter
+  - metrics for sharding: shard sizes
+- webhosting-operator
+  - controller metrics: queue length, reconciliation time
+- visualization in dashboards -> general evaluation
+- explain measure tool -> experiments
+
+[^kube-prometheus]: [https://github.com/prometheus-operator/kube-prometheus](https://github.com/prometheus-operator/kube-prometheus)
+[^kube-state-metrics]: [https://github.com/kubernetes/kube-state-metrics](https://github.com/kubernetes/kube-state-metrics)
+[^webhosting-exporter]: [Webhosting exporter source code](https://github.com/timebertt/kubernetes-controller-sharding/tree/master/webhosting-operator/cmd/webhosting-exporter)
 
 ## Experiment
 
@@ -53,6 +78,8 @@ general evaluation/testing?
 - object distribution
 - testing rolling updates
 - testing scale-out/in
+
+experiment
 
 - using the monitoring setup, experiment is conducted
 - evaluate, whether relevant resources from [@tbl:scaling-resources] are actually well-distributed across instances
@@ -81,6 +108,9 @@ general evaluation/testing?
 ![Memory usage by pod](../results/base-memory.pdf)
 
 ![Network bandwidth by pod](../results/base-network.pdf)
+
+- network metrics include metrics scraping
+  - can be neglected
 
 ## Discussion
 
