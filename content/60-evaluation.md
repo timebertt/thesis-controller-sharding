@@ -43,43 +43,53 @@ Most importantly, it includes a Prometheus [@promdocs] instance which collects m
 Container metrics are scraped from the kubelet's cadvisor endpoint [@k8sdocs], kube-state-metrics[^kube-state-metrics] is used as an exporter for metrics about API objects.
 Furthermore, the setup includes a Grafana [@grafanadocs] instance, which visualizes the metrics collected by prometheus in different dashboards.
 
-![Webhosting dashboard](../assets/dashboard-webhosting.png)
+![Webhosting dashboard](../assets/dashboard-webhosting.png){#fig:dashboard-webhosting}
 
 In addition to the components included in kube-prometheus, the webhosting exporter[^webhosting-exporter] is deployed which exposes metrics about the state of websites.
 It is implemented using the kube-state-metrics library and complements the metrics offered by kube-state-metrics by adding similar metrics about the webhosting operator's API objects.
 For example, one metric indicates the websites' phase, another one states which shard websites are assigned to.
 Additionally, the webhosting exporter is used to collect metrics about the state of the operator's shards, which is determined from the individual shard leases.
 
-![Sharding dashboard](../assets/dashboard-sharding.png)
+![Sharding dashboard](../assets/dashboard-sharding.png){#fig:dashboard-sharding}
 
 Finally, Prometheus is configured to collect metrics from the webhosting operator as well.
-It exposes metrics from the controller-runtime library about controllers, workqueues, and the Kubernetes client.
-E.g., these metrics offer information on the rate and duration of reconciliations, and how long objects are queued before being reconciled.
+It exposes metrics from the controller-runtime library about controllers, workqueues, and the Kubernetes client ([@fig:dashboard-controller-runtime]).
+E.g., these metrics offer information on the rate and duration of reconciliations, and for how long objects are queued before being reconciled.
 Additionally, metrics have been added about the sharder controllers' actions, i.e. assignment and drain operations.
 
-![Controller-runtime dashboard](../assets/dashboard-controller-runtime.png)
+![Controller-runtime dashboard](../assets/dashboard-controller-runtime.png){#fig:dashboard-controller-runtime}
 
+For general evaluation of the implementation, a sample generator[^sample-generator] is implemented to create a configurable amount of random website objects in different namespaces.
+[@Fig:dashboard-webhosting] shows the overview dashboard over webhosting API objects and their state based on metrics exposed by webhosting exporter and kube-state-metrics.
+It demonstrates, that all websites are successfully reconciled by the sharded operator and reach the `Ready` phase.
+The sharding overview in [@fig:dashboard-sharding] indicates that all 3 shards are healthy and properly maintain their shard lease.
+It also shows that responsibility for website objects is well-distributed across all 3 shards, with each shard being assinged roughly a third of all objects.
 
-- webhosting-exporter
-  - metrics for sharding: shard sizes
-- webhosting-operator
-  - controller metrics: queue length, reconciliation time
-- visualization in dashboards -> general evaluation
-- explain measure tool -> experiments
+Finally, the measure[^measure] tool is implemented for retrieving the relevant measurements from the Prometheus metrics store via the HTTP API.
+It fetches time series over a given time range and stores the result matrices in CSV-formatted files.
+[@Lst:measure-queries] shows the query configuration that is used to determine the operator's resource usage in experiments.
+
+```yaml
+queries:
+- name: cpu
+  query: sum(rate(container_cpu_usage_seconds_total{namespace="webhosting-system", container="manager"}[2m])) by (pod)
+- name: memory
+  query: sum(container_memory_rss{namespace="webhosting-system", container="manager"}) by (pod)
+- name: network_receive
+  query: sum(irate(container_network_receive_bytes_total{namespace="webhosting-system", pod=~"webhosting-operator-.+"}[2m])) by (pod)
+- name: network_transmit
+  query: sum(irate(container_network_transmit_bytes_total{namespace="webhosting-system", pod=~"webhosting-operator-.+"}[2m])) by (pod)
+```
+
+: Queries configuration for experiments {#lst:measure-queries}
 
 [^kube-prometheus]: [https://github.com/prometheus-operator/kube-prometheus](https://github.com/prometheus-operator/kube-prometheus)
 [^kube-state-metrics]: [https://github.com/kubernetes/kube-state-metrics](https://github.com/kubernetes/kube-state-metrics)
-[^webhosting-exporter]: [Webhosting exporter source code](https://github.com/timebertt/kubernetes-controller-sharding/tree/master/webhosting-operator/cmd/webhosting-exporter)
+[^webhosting-exporter]: [webhosting exporter source code](https://github.com/timebertt/kubernetes-controller-sharding/tree/master/webhosting-operator/cmd/webhosting-exporter)
+[^sample-generator]: [sample generator exporter source code](https://github.com/timebertt/kubernetes-controller-sharding/tree/master/webhosting-operator/cmd/sample-generator)
+[^measure]: [measure source code](https://github.com/timebertt/kubernetes-controller-sharding/tree/master/webhosting-operator/cmd/measure)
 
 ## Experiment
-
-general evaluation/testing?
-
-- object distribution
-- testing rolling updates
-- testing scale-out/in
-
-experiment
 
 - using the monitoring setup, experiment is conducted
 - evaluate, whether relevant resources from [@tbl:scaling-resources] are actually well-distributed across instances
@@ -95,6 +105,8 @@ experiment
 - explain experiment tool
 - scenarios
   - base scenario
+  - rolling update
+  - scale-out/in
 
 ![Load generated by experiment](../results/base-cpu.pdf)
 

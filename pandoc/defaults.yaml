@@ -12,6 +12,7 @@ metadata:
   # figPrefix: "Abb."
   # tblPrefix: "Tab."
   # eqnPrefix: "Formel"
+  lstPrefix: code
 
   codeBlockCaptions: true
 
