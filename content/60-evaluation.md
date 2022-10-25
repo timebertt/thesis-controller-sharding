@@ -1,24 +1,52 @@
 # Evaluation {#sec:evaluation}
 
+This chapter describes how the implementation (chapter [-@sec:implementation]) is used for evaluation of the proposed design (chapter [-@sec:design]).
+First, the deployment environment is presented.
+Next, the monitoring setup is introduced which is used to observe the webhosting operator and to take measurements.
+After that, the conducted experiment is described in detail.
+Last, results from conducting the experiment are presented and discussed.
+
 ## Deployment
 
-- explain concrete setup
-- shoot cluster: managed by Gardener [^gardener], Kubernetes version
-- worker pools: instance types, taints, system components, maxPods
+For evaluation of the proposed design, the webhosting operator implementation is deployed to a Kubernetes cluster along with other tooling for monitoring and experimentation.
+The Kubernetes cluster[^shoot] is managed by Gardener[^gardener] and runs on Google Cloud Platform (region `europe-west1`).
+The cluster runs Kubernetes version `1.24`.
 
+For isolation purposes and accurate measurements during load tests, the following worker pools are used to run the different components:
+
+| worker pool | instance type | components                                     | count |
+|-------------|---------------|------------------------------------------------|-------|
+| system      | n1-standard-8 | cluster system, monitoring, ingress controller | 1     |
+| operator    | n1-standard-4 | webhosting operator                            | 1     |
+| websites    | n1-standard-8 | website deployments                            | 10    |
+
+: Worker pools of the evaluation cluster {#tbl:worker-pools}
+
+Both the `operator` and `websites` worker pools are configured with taints [@k8sdocs] to repel all workload pods by default.
+With this, all pods are scheduled to the system worker pool if not configured otherwise.
+Kyverno[^kyverno] policies are used to add tolerations and scheduling constraints to all webhosting operator and website pods so that they are scheduled to the respective dedicated worker pools.
+To reduce the resource requirements of load tests, the websites worker pool is configured run up to 800 pods per node.
+Additional policies are used to replace the `nginx` image in website pods with the `pause` image during load tests.
+With this, websites are not functional but have a low memory footprint without affecting the experiment's measurements.
+
+[^shoot]: [Cluster specification](https://github.com/timebertt/kubernetes-controller-sharding/blob/master/webhosting-operator/shoot.yaml)
 [^gardener]: [https://github.com/gardener/gardener](https://github.com/gardener/gardener)
+[^kyverno]: [https://github.com/kyverno/kyverno](https://github.com/kyverno/kyverno)
 
 ## Monitoring
 
 - monitoring needed for observing and evaluation
 - introduce setup with different components
-- webhosting-exporter
-- kube-state-metrics, kube-prometheus, Grafana
-- cadvisor, prometheus
+  - kube-state-metrics, kube-prometheus, Grafana
+  - cadvisor, prometheus
+  - webhosting-exporter
 - metrics for sharding: shard sizes, sharder actions, ring calculations
 - controller metrics: queue length, reconciliation time
 - visualization: dashboards
 - network metrics include metrics scraping!
+- explain measure tool
+
+## Experiment
 
 general evaluation/testing?
 
@@ -26,14 +54,12 @@ general evaluation/testing?
 - testing rolling updates
 - testing scale-out/in
 
-
-## Experiment
-
 - using the monitoring setup, experiment is conducted
 - evaluate, whether relevant resources from [@tbl:scaling-resources] are actually well-distributed across instances
   - increase capacity (number of objects, size is fixed)
   - increase throughput (rate of relevant events)
 - compare resource usage of singleton setup with sharded setup
+  - deployment modes for sharded and singleton
 - note: singleton setup might have multiple replicas for HA
 - define measurements
   - measure: compute, memory, network transfer
@@ -47,14 +73,14 @@ general evaluation/testing?
 
 ## Results
 
+- execute scenario against sharded and singleton controller
+- compare measurements
+
 ![CPU usage by pod](../results/base-cpu.pdf)
 
 ![Memory usage by pod](../results/base-memory.pdf)
 
 ![Network bandwidth by pod](../results/base-network.pdf)
-
-- execute scenario against sharded and singleton controller
-- compare test results
 
 ## Discussion
 
