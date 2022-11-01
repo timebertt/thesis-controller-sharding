@@ -13,6 +13,7 @@ data.plot(
     xlabel='Time in seconds',
     ylabel='Website count',
     xlim=[0, data.index.max()],
+    kind='area',
     ax=ax1,
 )
 plt.ylim(bottom=0)
