@@ -15,6 +15,7 @@
   - run sharder as separate deployment
   - perform initial assignments in webhook
 - evaluate performance impact on API server and etcd, [@tbl:scaling-resources-server]
+- evaluation only static set of instances, measure resource usage during changes to instance set
 - movement on rolling updates
   - idea: StatefulSet could be used for stable hostname to minimize movements during rolling updates
   - idea: smoothen rolling updates by specifying `minReadySeconds`

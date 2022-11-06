@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import matplotlib.pyplot as plt
+
 from common import *
 
 plt.figure(figsize=(10, 6))
@@ -7,7 +9,7 @@ plt.figure(figsize=(10, 6))
 ax1 = plt.subplot(121)
 data = read_data('base/sharded-websites_per_project.csv')
 data.plot(
-    title='Websites per Project',
+    title='Websites per Project (stacked)',
     legend=False,
     grid=True,
     xlabel='Time in seconds',

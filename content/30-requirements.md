@@ -55,6 +55,8 @@ Additionally, scaling controllers increases the resource footprint of the API se
 
 : Resource implications on API server and etcd {#tbl:scaling-resources-server}
 
+\todo{make tables prettier}
+
 However, this study project focuses on scalability of the controller-side only.
 Scalability limitations and implications of the control plane is out of scope of this thesis.
 

@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+import matplotlib.pyplot as plt
+
 from common import *
 
 plt.figure(figsize=(10, 6))
