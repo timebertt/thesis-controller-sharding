@@ -5,7 +5,7 @@ First, the webhosting operator is introduced which serves as an example operator
 Then, the overall architecture of the implementation is described followed by detailed descriptions of the most important aspects.
 The presented implementation is used for evaluation in [chapter @sec:evaluation].
 
-## Webhosting Operator
+## Webhosting Operator {#sec:webhosting-operator}
 
 [^webhosting-operator]: [https://github.com/timebertt/kubernetes-controller-sharding](https://github.com/timebertt/kubernetes-controller-sharding)
 

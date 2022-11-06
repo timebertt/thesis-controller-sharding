@@ -6,7 +6,7 @@ Next, the monitoring setup is introduced which is used to observe the webhosting
 After that, the conducted experiment is described in detail.
 Last, results from conducting the experiment are presented and discussed.
 
-## Deployment
+## Deployment {#sec:deployment}
 
 For evaluation of the proposed design, the webhosting operator implementation is deployed to a Kubernetes cluster along with other tooling for monitoring and experimentation.
 The Kubernetes cluster[^shoot] is managed by Gardener[^gardener] and runs on Google Cloud Platform (region `europe-west1`).
@@ -54,8 +54,8 @@ Additionally, the webhosting exporter is used to collect metrics about the state
 
 Finally, Prometheus is configured to collect metrics from the webhosting operator as well.
 It exposes metrics from the controller-runtime library about controllers, workqueues, and the Kubernetes client ([@fig:dashboard-controller-runtime]).
-E.g., these metrics offer information on the rate and duration of reconciliations, and for how long objects are queued before being reconciled.
-Additionally, metrics have been added about the sharder controllers' actions, i.e. assignment and drain operations.
+For example, these metrics offer information on the rate and duration of reconciliations, and for how long objects are queued before being reconciled.
+Additionally, metrics are added about the sharder controllers' actions, i.e. assignment and drain operations.
 
 ![Controller-runtime dashboard](../assets/dashboard-controller-runtime.png){#fig:dashboard-controller-runtime}
 
@@ -66,8 +66,8 @@ The sharding overview in [@fig:dashboard-sharding] indicates that all 3 shards a
 It also shows that responsibility for website objects is well-distributed across all 3 shards, with each shard being assinged roughly a third of all objects.
 
 Finally, the measure[^measure] tool is implemented for retrieving the relevant measurements from the Prometheus metrics store via the HTTP API.
-It fetches time series over a given time range and stores the result matrices in CSV-formatted files.
-[@Lst:measure-queries] shows the query configuration that is used to determine the operator's resource usage in experiments.
+It fetches time series over a given time range and stores the result matrices in CSV-formatted files for further analysis and visualization.
+[@Lst:measure-queries] shows the query configuration that is used to determine the operator's resource usage in the following experiment.
 
 ```yaml
 queries:
@@ -86,37 +86,54 @@ queries:
 [^kube-prometheus]: [https://github.com/prometheus-operator/kube-prometheus](https://github.com/prometheus-operator/kube-prometheus)
 [^kube-state-metrics]: [https://github.com/kubernetes/kube-state-metrics](https://github.com/kubernetes/kube-state-metrics)
 [^webhosting-exporter]: [webhosting exporter source code](https://github.com/timebertt/kubernetes-controller-sharding/tree/master/webhosting-operator/cmd/webhosting-exporter)
-[^sample-generator]: [sample generator exporter source code](https://github.com/timebertt/kubernetes-controller-sharding/tree/master/webhosting-operator/cmd/sample-generator)
+[^sample-generator]: [sample generator source code](https://github.com/timebertt/kubernetes-controller-sharding/tree/master/webhosting-operator/cmd/sample-generator)
 [^measure]: [measure source code](https://github.com/timebertt/kubernetes-controller-sharding/tree/master/webhosting-operator/cmd/measure)
 
 ## Experiment
 
-- using the monitoring setup, experiment is conducted
-- evaluate, whether relevant resources from [@tbl:scaling-resources] are actually well-distributed across instances
-  - increase capacity (number of objects, size is fixed)
-  - increase throughput (rate of relevant events)
-- compare resource usage of singleton setup with sharded setup
-  - deployment modes for sharded and singleton
+Using the described deployment and monitoring setup, an experiment is conducted to evaluate the sharding implementation in the webhosting operator.
+The experiment's aim is to determine whether the relevant resources from [@tbl:scaling-resources] are well-distributed across the individual instances.
+In other words, the experiment verifies that the system's capacity and throughput are increased with the resources used by the additional instances.
+It assesses how well the sharded operator scales horizontally.
+
+For this purpose, the experiment tool[^experiment] is implemented to conduct load tests for the webhosting operator.
+The tool generates load by constantly creating objects and triggering reconciliations over a certain timespan.
+It thereby increases the capacity and throughput of the system to measure the resulting resource usage.
+As described in [@sec:deployment], the webhosting operator is deployed on nodes isolated from all other workload.
+This ensures that the operator is able to consume as many resources as it needs to handle the actual capacity and throughput of the system.
+By this, the experiment allows to draw conclusions about how much resources are needed to handle a certain capacity and throughput and how both increase with the amount of resources added to the system.
+
+For now, only one experiment scenario is implemented, which is called `base`[^base-scenario].
+In this scenario, the tool generates 50 random `Theme` objects and 20 random project namespaces.
+Over the course of 10 minutes it then generates random `Website` objects in different project namespaces using different `Themes`.
+To make the load tests more realistic, `Websites` are also randomly deleted, though with a lower rate than creation.
+During the load test, the tool generates 14 random `Websites` per second and deletes 1 object per second, hence there are about 7800 `Websites` after 10 minutes.
+To simulate frequent changes to `Website` objects by users, the tool triggers individual reconciliations of each object once per minute but 100 reconciliations per second at maximum.
+Additionally, the tool also simulates occasional changes to `Theme` objects by service administrators.
+For this, it picks one random `Theme` per minute and mutates its specification.
+As described in [@sec:webhosting-operator], this update triggers reconciliations for all `Website` objects referencing the `Theme`.
+After 10 minutes, the tool generates a total of about 103 reconciliations per second on average with bursts of roughly 256 reconciliations per second.
+This load is sustained for 5 more minutes before all objects generated by the experiment are cleaned up.
+[@Fig:base-websites] shows how the amount of websites is increased over the experiment's timespan and how they are distributed across the operator's shards.
+
+![Load generated by base scenario](../results/base-websites.pdf){#fig:base-websites}
+
+
 - define measurements
-  - measure: compute, memory, network transfer
+  - measure: CPU, memory, network bandwidth
   - memory: RSS instead of WSS (we are not interested in when the kernel reclaims memory)
   - on controller side only, server side future work
-- note: in reality, singleton setup might have multiple replicas for HA
-- network metrics include metrics scraping
-  - can be neglected
-- explain experiment tool
-- scenarios
-  - base scenario
-  - (rolling update)
-  - (scale-out/in)
+  - network metrics include metrics scraping; can be neglected
+- compare resource usage of singleton setup with sharded setup
+  - explain deployment modes for sharded and singleton
+  - note: in reality, singleton setup might have multiple replicas for HA
+- (additional scenarios): rolling update, scale-out/in
 - how to prove incremental scale-out (req. \ref{req:scale-out}) is fulfilled?
 
+[^experiment]: [experiment source code](https://github.com/timebertt/kubernetes-controller-sharding/tree/master/webhosting-operator/cmd/experiment)
+[^base-scenario]: [base scenario source code](https://github.com/timebertt/kubernetes-controller-sharding/tree/master/webhosting-operator/pkg/experiment/scenario/base)
+
 <!--### Base Scenario-->
-
-![Load generated by base scenario](../results/base-websites.pdf)
-
-- execute scenario against sharded and singleton controller
-- compare measurements
 
 ![CPU usage by pod](../results/base-cpu.pdf)
 

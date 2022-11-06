@@ -18,18 +18,18 @@ Generally speaking, the following resource requirements increase with the contro
 \todo{define capacity, throughput}
 \todo{define singleton controller}
 
-+------------------+------------------------------------------------------------+
-| resource         | depends on                                                 |
-+==================+============================================================+
-| compute          | rate and size of API objects encoded, decoded              |
-|                  | (API requests and watch events),                           |
-|                  | rate and CPU consumption of actual reconciliations         |
-+------------------+------------------------------------------------------------+
-| memory           | number and size of API objects stored in the controller's  |
-|                  | caches                                                     |
-+------------------+------------------------------------------------------------+
-| network transfer | rate and size of API requests and watch events             |
-+------------------+------------------------------------------------------------+
++-------------------+------------------------------------------------------------+
+| resource          | depends on                                                 |
++===================+============================================================+
+| CPU               | rate and size of API objects encoded, decoded              |
+|                   | (API requests and watch events),                           |
+|                   | rate and CPU consumption of actual reconciliations         |
++-------------------+------------------------------------------------------------+
+| memory            | number and size of API objects stored in the controller's  |
+|                   | caches                                                     |
++-------------------+------------------------------------------------------------+
+| network bandwidth | rate and size of API requests and watch events             |
++-------------------+------------------------------------------------------------+
 
 : Resource requirements of a Kubernetes controller {#tbl:scaling-resources}
 
@@ -40,18 +40,18 @@ Hence, it is desirable to make controllers horizontally scalable and rather dist
 
 Additionally, scaling controllers increases the resource footprint of the API server and etcd in the following dimensions as well:
 
-+------------------+------------------------------------------------------------+
-| resource         | depends on                                                 |
-+==================+============================================================+
-| compute          | rate and size of API objects converted, encoded, decoded;  |
-|                  | rate and size of watch events dispatched to clients        |
-+------------------+------------------------------------------------------------+
-| memory           | number and size of API objects stored in the watch cache   |
-+------------------+------------------------------------------------------------+
-| network transfer | rate and size of API requests and watch events             |
-+------------------+------------------------------------------------------------+
-| disk I/O         | rate and size of API objects read from and written to disk |
-+------------------+------------------------------------------------------------+
++-------------------+------------------------------------------------------------+
+| resource          | depends on                                                 |
++===================+============================================================+
+| CPU               | rate and size of API objects converted, encoded, decoded;  |
+|                   | rate and size of watch events dispatched to clients        |
++-------------------+------------------------------------------------------------+
+| memory            | number and size of API objects stored in the watch cache   |
++-------------------+------------------------------------------------------------+
+| network bandwidth | rate and size of API requests and watch events             |
++-------------------+------------------------------------------------------------+
+| disk I/O          | rate and size of API objects read from and written to disk |
++-------------------+------------------------------------------------------------+
 
 : Resource implications on API server and etcd {#tbl:scaling-resources-server}
 
