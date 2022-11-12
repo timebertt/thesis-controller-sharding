@@ -322,51 +322,65 @@ If however, the leader fails to renew its lease in time (loss of leadership), it
 In an HA-setup with multiple instances, this mechanism ensures a fast fail-over in case of losing the active leader.
 However, this effectively prevents scaling controllers horizontally and distributing work across multiple instances.
 
-## Sharding in Distributed Databases
+## Sharding in Distributed Databases {#sec:databases}
 
-- summarize relevant aspects of Cassandra, Bigtable, Dynamo, MongoDB, CockroachDB, Spanner
-- membership mechanism
-  - gossip (Cassandra, CockroachDB)
-    - all nodes are equal, no master needed
-    - nodes announce themselves to the cluster
-    - seed nodes for cluster bootstrapping
-    - failures are detected by all nodes independently
-  - lease-based (Bigtable)
-    - needs store for facilitating leases and locks: Chubby
-    - servers announce themselves by acquiring locks, delete locks on termination
-    - servers serve data as long as they hold the lock
-    - master periodically asks servers for lock status
-    - on failure, master acquires special lock (for checking if Chubby is live)
-    - if successful, master deletes servers lock
-  - other
-    - zonemaster / placement driver continuously talks to spanservers (Spanner)
-- partitioning / sharding algorithms
-  - consistent hashing (Cassandra, Dynamo) [@karger1997consistent]
-    - deterministic given data (partitioning key) and cluster members' status
-    - doesn't need to store data location anywhere
-    - stable partitioning during scale-out/in
-    - virtual nodes: better distribution in small clusters [@stoica2001chord]
-  - arbitrary logic (Bigtable, MongoDB, CockroachDB, Spanner)
-    - controlled by some form of master
-    - persisted in metadata tables / key ranges
-  - partition key
-    - input for sharding algorithms, can achieve physical co-location of related data
-    - typically, needs to be backed by index
-    - key / row ID, part of primary key
-    - arbitrary sharding key chosen by application developer
-    - could be natural sharding key in product (e.g. workspace, project, etc.)
-- request coordination / assignment
-  - all nodes know where data is located and proxy requests because partitioning is propagated via gossip (Cassandra, Dynamo)
-  - clients cache data location from Chubby (Bigtable)
-  - proxies cache data location from metadata table and proxy requests (MongoDB, Spanner)
-  - nodes cache data location from metadata table and proxy requests (CockroachDB)
-  - no single-point of failure or bottleneck on request path
-- replication
-  - if replication is done, concurrency control is needed (probably not relevant)
-  - via data versioning/MVCC (Cassandra, Dynamo)
-  - via consensus
-    - paxos (Chubby, Spanner), raft (etcd, CockroachDB, TiDB)
-    - multi-group-paxos/raft (Spanner, CockroachDB, TiDB)
-  - tunable consistency
-- incremental scale-out
-  - linear capacity increase with every added node
+This section summarizes important and proven sharding approaches in well-known distributed databases.
+It is structured by mechanisms that are common across different implementations.
+Chapter [-@sec:design] evaluates which of these mechanisms and approaches can be applied to Kubernetes controllers as well.
+
+First, nodes of distributed database clusters need to discover their peers and derive information about their state, e.g. whether they are ready to host data and serve queries or not.
+One common approach for this **membership mechanism** is gossip-based and used for example in Cassandra and CockroachDB [@cassandradocs; @cockroachdbdocs].
+In this approach, all nodes of the system are equal and there is no designated leader 
+ or central instance.
+Nodes announce themselves to the cluster and discover their peers by communicating with the cluster.
+Node information is then propagated to other nodes via ongoing communication between peers (gossip).
+Several nodes can be used as seed nodes, which are used to bootstrap the gossip protocol.
+If a node failure occurs the other nodes independently detect the failure based on the gossiped information.
+
+Bigtable implements a different approach for discovering membership information, which is based on leases in a central lock store [@bigtable2006].
+Here, individual nodes don't communicate with each other for exchanging membership information but instead announce themselves to the master node by acquiring individual locks in Chubby, a highly-available lock service [@chubby2006].
+As long as an instance is alive, it renews its lock lease to signal readiness to the master and serves data to clients.
+The lock is deleted on termination to inform the master about voluntary disruption.
+The master watches the servers directory in Chubby and asks instances for the lock status to discover ready instances.
+If an instance fails to report a healthy lock, the master tries to acquire the instance's lock to ensure Chubby is reachable.
+If this succeeds, the master has successfully detected the instance failure and deletes the corresponding lock in Chubby so that the instance will not serve data again.
+Another approach for implementing the membership mechanism includes frequent communication between a master and individual instances for checking their health status as seen in Spanner [@spanner2013].
+
+After discovering available instances, sharded databases need an **algorithm for partitioning data**, i.e., for determining which data is stored by which instance.
+For this, each unit of data holds a partition key that is used as input for the sharding algorithm.
+Partition keys are typically backed by a physical index and often are part of a primary key structure.
+In many database systems, application developers can designate a certain column as the partition key which allows to co-locate related data.
+If there is a natural sharding key in the applications business model, this can be used for example to place all data belonging to the same workspace, project or similar on the same servers for improved query performance.
+While the concept of partition keys is common amongst distributed databases, there are different approaches for the actual sharding mechanism that assigns subsets of data to instances.
+
+Bigtable, MongoDB, CockroachDB and Spanner for example have some form of master instance to control data partitioning using some arbitrary logic.
+In these systems, a central instance decides where to place data according to current server utilization, placement constraints, and similar indicators.
+The partitioning information is persisted in metadata tables or metadata key ranges respectively that are known to all instances to allow servers to discover where a given data subset is located for querying. [@bigtable2006; @mongodbdocs; @cockroachdbdocs; @spanner2013]
+
+On the other hand, Cassandra and Dynamo use consistent hashing as a partitioning algorithm [@karger1997consistent] -- also known as ring hashing.
+In consistent hashing, servers and partition keys are both hashed onto a ring.
+Data is assigned to the server with the key that has the smallest hash larger than the hash of the partition key.
+When new servers are added to or existing servers are removed from a ring with $n$ servers, only $1/n$ of all entries are moved to another server.
+This provides near optimal stability of partitioning in dynamic environments during scale-out/in.
+A common improvement of consistent hashing is to use so-called virtual nodes for achieving better distribution of keys in clusters with a small amount of members.
+For this, each server is mapped to multiple tokens that are hashed onto the ring. [@stoica2001chord; @dynamo2007; @cassandradocs]
+
+The third important sharding mechanism in distributed databases is **coordination of client requests and storage of assignments**.
+Consistent hashing is deterministic given the partition key and cluster members' statuses.
+Hence, there is no need to store data assignments in a central place in Cassandra and Dynamo.
+Instead, data locality can be determined by all nodes independently based on gossiped membership information.
+In Cassandra and Dynamo, clients can send requests to any cluster node.
+The node then takes care of determining the responsible server for the queried data and proxies the request accordingly [@cassandradocs; @dynamo2007].
+Similarly, clients can also send requests to any cluster member of a CockroachDB cluster, which looks up and caches data locality from the metadata key range and proxies them to the responsible node accordingly [@cockroachdbdocs].
+In contrast to that, Bigtable stores the location of its metadata table in Chubby, which clients need to request in order to determine data locality.
+For each request, clients first locate the requested data from the metadata table or possibly from a cache and then send the request to the responsible server [@bigtable2006].
+In MongoDB and Spanner, there are dedicated server instances that don't store data and only respond to requests.
+These proxies are responsible for locating data in the cluster and cache that information for further client requests [@mongodbdocs; @spanner2013].
+One important aspect of all approaches to request coordination in distributed databases is that there is no single point of failure or bottleneck on the request path, that all client communication goes through.
+
+Last, many sharded databases replicate individual data subsets to provide high availability and durability.
+Typically, there is some form of **concurrency control** involved in order to provide consistency despite concurrent requests to different replicas of the same data subset.
+Depending on the database's consistency guarantees, different approaches are applied.
+Cassandra and Dynamo use timestamp versioning per data item and resolve conflicts by applying the "last write wins" policy [@cassandradocs; @dynamo2007].
+In other database systems, a form of distributed consensus algorithm is leveraged to provide concurrency control.
+Examples for this are Paxos as used in Chubby [@chubby2006], raft as used in etcd [@etcddocs] or multi-group derivatives of them as used in Spanner and CockroachDB [@spanner2013; @cockroachdbdocs].
