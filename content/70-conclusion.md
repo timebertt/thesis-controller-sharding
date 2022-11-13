@@ -1,6 +1,6 @@
 # Conclusion and Future Work
 
-This thesis presented first steps towards horizontally scalable Kubernetes controllers.
+This thesis performed first steps towards horizontally scalable Kubernetes controllers.
 As part of the motivation for this work, it was shown that the current leader election mechanisms effectively prevents from scaling Kubernetes controllers horizontally.
 Because of this, Kubernetes controllers can only be scaled vertically which restricts their scalability by the available machine sizes and network bandwidth of the underlying infrastructure.
 After laying out the relevant background of Kubernetes controllers for this thesis, important proven sharding mechanisms of distributed databases were summarized.
@@ -16,7 +16,7 @@ After describing the deployment and monitoring setup in detail, a load test expe
 
 To summarize, this thesis showed that well-known sharding mechanisms from the field of distributed databases can be applied well to Kubernetes controllers.
 The resulting design allows to remove the current scalability limitation of controllers and scale them horizontally.
-The conducted evaluation shows that the presented sharding implementation works realizes a good distribution of responsibility for objects amongst multiple controller instances.
+The conducted evaluation shows that the presented sharding implementation works realizes a good distribution of responsibility for objects among multiple controller instances.
 Furthermore, the resource requirements of the singleton controller is distributed across multiple shards.
 However, the sharder instance still has a high resource usage and thus faces similar scalability limitations in the vertical direction as the singleton controller setup.
 Nevertheless, the measurements lead to the conclusion that this limitation can be removed by deploying the sharder components separately from the shard components.

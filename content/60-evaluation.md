@@ -180,7 +180,7 @@ The sharded operator instances transmit about 44% as many bytes as the singleton
 ## Discussion
 
 The results presented in the previous section demonstrate that the proposed design for sharding in Kubernetes controllers achieves a distribution of the required resources across controller instances.
-First of all, the implemented mechanisms realize a good distribution of responsibility for API objects amongst the three shards.
+First of all, the implemented mechanisms realize a good distribution of responsibility for API objects among the three shards.
 It is shown that the individual shards of the system require roughly half as many resources in comparison to the singleton controller.
 With that, the presented sharding mechanism overcomes the current scalability limitation of Kubernetes controllers and makes them horizontally scalable.
 Using such an architecture allows to increase the system's capacity and throughput by adding more controller instances.

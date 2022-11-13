@@ -351,7 +351,7 @@ For this, each unit of data holds a partition key that is used as input for the 
 Partition keys are typically backed by a physical index and often are part of a primary key structure.
 In many database systems, application developers can designate a certain column as the partition key which allows to co-locate related data.
 If there is a natural sharding key in the applications business model, this can be used for example to place all data belonging to the same workspace, project or similar on the same servers for improved query performance.
-While the concept of partition keys is common amongst distributed databases, there are different approaches for the actual sharding mechanism that assigns subsets of data to instances.
+While the concept of partition keys is common among distributed databases, there are different approaches for the actual sharding mechanism that assigns subsets of data to instances.
 
 Bigtable, MongoDB, CockroachDB and Spanner for example have some form of master instance to control data partitioning using some arbitrary logic.
 In these systems, a central instance decides where to place data according to current server utilization, placement constraints, and similar indicators.
