@@ -195,6 +195,7 @@ Nevertheless, the presented design does not prescribe that the sharder must also
 The deployment setup could be adapted to run the shard and sharder in dedicated instance sets (i.e., `Deployments`).
 Based on the presented experiment results, it is expected that this results in a better distribution resource requirements.
 With that, the original scalability limitation in the vertical direction can be overcome entirely and the system's scalability can be increased even further.
+\todo[inline]{equally-sized instances, easier to right-size vertically}
 
 Last, it is worth noting that the simulated load is still very low in comparison to production deployments of controllers.
 With even more and larger API objects in the system, the difference between the sharder's and singleton's resources usage might be more significant.

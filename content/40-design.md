@@ -138,6 +138,8 @@ In this case, the sharder removes the `drain` label itself when updating the `sh
 
 ## Alternatives Considered
 
+\todo{write or remove this section}
+
 <!--
 - sharding by resource
   - can't be done dynamically / during runtime (or at least that's more difficult)
