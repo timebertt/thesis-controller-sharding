@@ -196,5 +196,5 @@ The deployment setup could be adapted to run the shard and sharder in dedicated 
 Based on the presented experiment results, it is expected that this results in a better distribution resource requirements.
 With that, the original scalability limitation in the vertical direction can be overcome entirely and the system's scalability can be increased even further.
 
-Lastly, it is worth noting that the simulated load is still very low in comparison to production deployments of controllers.
+Last, it is worth noting that the simulated load is still very low in comparison to production deployments of controllers.
 With even more and larger API objects in the system, the difference between the sharder's and singleton's resources usage might be more significant.
