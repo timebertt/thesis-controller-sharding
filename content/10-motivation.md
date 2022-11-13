@@ -19,6 +19,7 @@ Leadership can be seen as state that Kubernetes controllers carry which prevents
 This restriction imposes scalability limitations for Kubernetes controllers.
 I.e., the rate of reconciliations, amount of objects, etc. is limited by the machine size that the active controller runs on and the network bandwidth it can use.
 In contrast to usual stateless applications, one cannot increase the capacity and throughput of the system by adding more instances (horizontal scaling) but only by using bigger instances (vertical scaling).
+\todo{responsiveness / user experience}
 
 This thesis explores approaches for distributing reconciliation of Kubernetes objects across multiple controller instances.
 It attempts to lift the restriction of having only one active replica per controller.
