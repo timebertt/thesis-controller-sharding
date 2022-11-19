@@ -3,13 +3,11 @@
 ## Architecture
 
 Kubernetes is an open-source container orchestration system that manages containers on a cluster of machines.
-It is a distributed system composed of several components, that can be categorized as control plane components and node components.
+It is a distributed system composed of several components, that can be categorized as control plane components and worker node components.
 The Kubernetes control plane consists of etcd and API server for storing cluster state and a set of controllers for managing the cluster's worker nodes and the workload itself.
 Each worker node hosts a cluster agent called kubelet, a container runtime and other system components that are responsible for tasks like networking, monitoring, etc. [@k8sdocs]
 
-![Kubernetes Cluster Architecture [@k8sdocs]](../assets/cluster-architecture.png)
-
-\todo{redraw?}
+![Kubernetes Cluster Architecture [@k8sdocs]](../assets/cluster-architecture.pdf)
 
 **etcd** [@etcddocs] is the only stateful component of the Kubernetes cluster architecture.
 It is a consistent key-value store, that is used by the API server for storing the entire cluster state.
