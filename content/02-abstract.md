@@ -10,4 +10,6 @@ It shows that proven sharding mechanisms used in distributed databases can be ap
 An example implementation demonstrates the feasibility of the proposed design and experiments are conducted to prove that resource requirements are distributed across instances. 
 With this, first steps towards horizontally scalable Kubernetes controllers are performed.
 
+\todo[inline]{longer, concrete results}
+
 \newpage

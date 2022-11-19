@@ -1,5 +1,13 @@
 \begingroup
 \hypersetup{linkcolor=black}
+
+<!--
+\listof (used by minted's \listoflistings) does not respect the \parskip length
+set \parskip to zero for lists to get a harmonized layout
+-->
+
+\setlength{\parskip}{0em}
+
 \todototoc
 \listoftodos{}
 
@@ -8,7 +16,7 @@
 \listoffigures
 \listoftables
 \listoflistings
-\todo[inline]{Fix spacing}
+
 \endgroup
 
 \newpage
