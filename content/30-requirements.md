@@ -7,22 +7,31 @@ Afterwards, it analyzes what is required to make Kubernetes controllers horizont
 
 Kubernetes controllers need to prevent uncoordinated and conflicting actions from different instances on the same API objects.
 Therefore, controllers currently use leader election mechanisms to determine a single active instance at any given time.
-Even if multiple instances are running at the same time, there will only be a single instance carrying out work -- the current leader.
+Even if multiple instances are running at the same time, only a single instance carries out the actual work -- the current leader.
 This means, that a controller's work cannot be distributed across multiple controller instances.
-Because of this, capacity and throughput of a controller can only be increased by scaling it vertically, i.e., adding more resources to the instances.
+In the context of this thesis, such a setup is referred to as a "singleton controller" setup.
+
+The most important scalability dimensions of a Kubernetes controller are capacity and throughput.
+The capacity of a controller shall be defined as the total amount and size of API objects existing in the cluster simultaneously that are watched by the controller.
+Increasing a controller's capacity is mainly reflected in an increased cache size.
+When reaching the upper limit of the controller's capacity, it might run out of memory and stop working entirely.
+This sets hard limits for how many API objects can be managed in a single cluster and might limit the ability to support increased usage of the service that the controller is responsible for.
+A controller's throughput shall be defined as the rate of reconciliations it performs and watch events it handles.
+If API objects are created, updated and deleted frequently the controller's throughput needs to be high enough to properly handle all reconciliation requests.
+When the rate of reconciliation requests exceeds the controller's maximum throughput, the system will become less responsive as reconciliation requests are queued up and delayed.
+This results in decreased user experience and stability of the system.
+
+Because a controller's work cannot be distributed, its capacity and throughput can only be increased by scaling it vertically, i.e., by adding more resources to the instance.
 However, one cannot increase capacity or throughput by adding more controller instances.
 I.e., as of now, Kubernetes controllers are not horizontally scalable.
-
 In order to understand what is required for scaling Kubernetes controllers horizontally, it's important to note which resource dimensions are relevant for scaling.
 Generally speaking, the following resource requirements increase with the controller's capacity and throughput:
-\todo{define capacity, throughput -> responsiveness / user experience}
-\todo{define singleton controller}
 
 +-------------------+------------------------------------------------------------+
 | resource          | depends on                                                 |
 +==================:+============================================================+
 | CPU               | rate and size of API objects encoded, decoded              |
-|                   | (API requests and watch events),                           |
+|                   | (API requests and watch events), \newline                  |
 |                   | rate and CPU consumption of actual reconciliations         |
 +-------------------+------------------------------------------------------------+
 | memory            | number and size of API objects stored in the controller's  |
@@ -34,29 +43,27 @@ Generally speaking, the following resource requirements increase with the contro
 : Resource requirements of a Kubernetes controller {#tbl:scaling-resources}
 
 As controllers can only be scaled by deploying larger instances, this effectively limits their scalability by the available machine sizes and network bandwidth.
-Note, that using bigger machines and broader network connections typically has negative impact on cost-efficiency at the top end of the spectrum.
+Note, that using bigger machines and broader network connections typically has a negative impact on cost-efficiency at the top end of the spectrum.
 Hence, it is desirable to make controllers horizontally scalable and rather distribute multiple instances across smaller machines instead of deploying bigger instances.
-\todo[inline]{move this to motivation?}
 
-Additionally, scaling controllers increases the resource footprint of the API server and etcd in the following dimensions as well:
-
-+-------------------+------------------------------------------------------------+
-| resource          | depends on                                                 |
-+==================:+============================================================+
-| CPU               | rate and size of API objects converted, encoded, decoded;  |
-|                   | rate and size of watch events dispatched to clients        |
-+-------------------+------------------------------------------------------------+
-| memory            | number and size of API objects stored in the watch cache   |
-+-------------------+------------------------------------------------------------+
-| network bandwidth | rate and size of API requests and watch events             |
-+-------------------+------------------------------------------------------------+
-| disk I/O          | rate and size of API objects read from and written to disk |
-+-------------------+------------------------------------------------------------+
-
-: Resource implications on API server and etcd {#tbl:scaling-resources-server}
-
+Additionally, increasing a controller's capacity and throughput also increases the resource footprint of the API server and etcd as outlined in [@tbl:scaling-resources-server].
 However, this study project focuses on scalability of the controller-side only.
 Scalability limitations and implications of the control plane is out of scope of this thesis.
+
++-------------------+-----------------------------------------------------------------------+
+| resource          | depends on                                                            |
++==================:+=======================================================================+
+| CPU               | rate and size of API objects converted, encoded, decoded, \newline    |
+|                   | rate and size of watch events dispatched to clients                   |
++-------------------+-----------------------------------------------------------------------+
+| memory            | number and size of API objects stored in the watch cache              |
++-------------------+-----------------------------------------------------------------------+
+| network bandwidth | rate and size of API requests and watch events                        |
++-------------------+-----------------------------------------------------------------------+
+| disk I/O          | rate and size of serialized API objects read from and written to disk |
++-------------------+-----------------------------------------------------------------------+
+
+: Resource implications on API server and etcd {#tbl:scaling-resources-server}
 
 ## Requirements for Horizontal Scalability {#sec:requirements}
 
