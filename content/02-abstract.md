@@ -1,6 +1,6 @@
 \chapter*{Abstract}
 
-Controllers play an essential role in every Kubernetes cluster by realizing the desired state specified declaratively in API objects -- a process referred to as reconciliation.
+Controllers play an essential role in every Kubernetes cluster by realizing the desired state specified declaratively in API objects – a process referred to as reconciliation.
 To prevent uncoordinated and conflicting actions of concurrent reconciliations, controllers use a leader election mechanism to determine a single active controller instance.
 Because of this, reconciliations cannot be distributed among multiple controller instances which effectively limits the system's capacity and throughput by the available machine sizes and network bandwidth of the underlying infrastructure.
 I.e., leader election prevents Kubernetes controllers from being horizontally scalable.
