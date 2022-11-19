@@ -15,12 +15,12 @@ I.e., as of now, Kubernetes controllers are not horizontally scalable.
 
 In order to understand what is required for scaling Kubernetes controllers horizontally, it's important to note which resource dimensions are relevant for scaling.
 Generally speaking, the following resource requirements increase with the controller's capacity and throughput:
-\todo{define capacity, throughput}
+\todo{define capacity, throughput -> responsiveness / user experience}
 \todo{define singleton controller}
 
 +-------------------+------------------------------------------------------------+
 | resource          | depends on                                                 |
-+===================+============================================================+
++==================:+============================================================+
 | CPU               | rate and size of API objects encoded, decoded              |
 |                   | (API requests and watch events),                           |
 |                   | rate and CPU consumption of actual reconciliations         |
@@ -42,7 +42,7 @@ Additionally, scaling controllers increases the resource footprint of the API se
 
 +-------------------+------------------------------------------------------------+
 | resource          | depends on                                                 |
-+===================+============================================================+
++==================:+============================================================+
 | CPU               | rate and size of API objects converted, encoded, decoded;  |
 |                   | rate and size of watch events dispatched to clients        |
 +-------------------+------------------------------------------------------------+
@@ -54,8 +54,6 @@ Additionally, scaling controllers increases the resource footprint of the API se
 +-------------------+------------------------------------------------------------+
 
 : Resource implications on API server and etcd {#tbl:scaling-resources-server}
-
-\todo{make tables prettier}
 
 However, this study project focuses on scalability of the controller-side only.
 Scalability limitations and implications of the control plane is out of scope of this thesis.

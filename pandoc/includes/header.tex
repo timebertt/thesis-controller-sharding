@@ -57,8 +57,9 @@
     font=normal,
     labelfont=bf
 ]{caption}
+\usepackage[]{subcaption}
 
-\DeclareCaptionStyle{figurecaption}{
+\DeclareCaptionStyle{caption}{
     format=plain,
     justification=centering,
     margin=12pt,
@@ -69,20 +70,9 @@
     belowskip=-5pt
 }
 
-\DeclareCaptionStyle{tablecaption}{
-    format=plain,
-    justification=centering,
-    margin=12pt,
-    font=normal,
-    labelfont=bf,
-    position=bottom,
-    aboveskip=5pt,
-    belowskip=5pt
-}
-
-\usepackage[]{subcaption}
-\captionsetup[figure]{style=figurecaption}
-\captionsetup[table]{style=tablecaption}
+\captionsetup[figure]{style=caption}
+\captionsetup[table]{style=caption}
+\captionsetup[listing]{style=caption}
 
 % continuous figure and table numbering
 \counterwithout{figure}{chapter}
@@ -108,6 +98,10 @@
 \usepackage{makecell}
 \usepackage{colortbl}
 \usepackage[svgnames]{xcolor}
+
+% cell padding
+\renewcommand{\arraystretch}{1.5}
+
 % ====================================================
 
 %% Use Links & Refs ==================================

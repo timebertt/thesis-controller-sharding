@@ -1,5 +1,10 @@
 #!/usr/bin/env python
 
+"""
+Pandoc filter to render code blocks with latex package minted instead of
+pandoc's built-in code highlighting.
+"""
+
 from string import Template
 
 from pandocfilters import toJSONFilter, RawBlock, RawInline
@@ -29,7 +34,7 @@ def unpack_code(value, language):
             'attributes': attributes, 'caption': caption}
 
 
-def minted(key, value, format, meta):
+def process_code(key, value, format, meta):
     ''' Use minted for code in LaTeX.
 
     Args:
@@ -67,4 +72,4 @@ $contents
 
 
 if __name__ == '__main__':
-    toJSONFilter(minted)
+    toJSONFilter(process_code)

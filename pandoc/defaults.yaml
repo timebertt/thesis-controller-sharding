@@ -40,5 +40,6 @@ filters:
 - ./pandoc/filters/remove-date.sh
 - pandoc-crossref
 - ./pandoc/filters/pandoc-minted.py
+- ./pandoc/filters/pretty-tables.py
 - citeproc
 
