@@ -80,9 +80,8 @@ Additionally, it allows the controller to immediately report the status of the `
 
 Furthermore, the controller watches all available `Themes` and enqueues all `Website` objects that reference a `Theme` for reconciliation, if its specification changes.
 With this, changes to `Themes` are immediately rolled out to all `Websites` that use them.
-Also, `Website` reconciliations are very short, making the controller responsive and scalable.
-
-\todo[inline]{controller can be manually triggered by annotation change}
+Additionally, `Website` reconciliations can be triggered by annotation changes for load test purposes.
+The reconciliations themselves are very short, making the controller responsive and scalable.
 
 ## Architecture
 
@@ -279,7 +278,8 @@ func (r *Ring) Hash(key string) string {
 
 If the object is not assigned yet, the sharder controller simply patches the object's `shard` label to the desired shard.
 However, if the object is already assigned to a different shard, the sharder controller first adds the `drain` label to object in order to wait for acknowledgment by the current shard (see [-@sec:des-concurrency]).
-\todo[inline]{drain is only done for main object kind}
+This operation is only performed for the main object kind of the sharded controller, as it does not perform mutating actions on owned objects as long as it isn't responsible for the owning object.
+Hence, concurrency is already prevented by the drain operation of the main object and doesn't need to be handled separately for owned objects.
 
 ## Object Controller {#sec:impl-object-controller}
 

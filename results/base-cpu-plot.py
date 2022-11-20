@@ -13,7 +13,7 @@ data.plot(
     legend=False,
     grid=True,
     xlabel='Time in seconds',
-    ylabel='CPU cores',
+    ylabel='CPU usage in cores',
     xlim=[0, data.index.max()],
     ax=ax1,
 )
@@ -25,7 +25,7 @@ data.plot(
     legend=False,
     grid=True,
     xlabel='Time in seconds',
-    ylabel='CPU cores',
+    ylabel='CPU usage in cores',
     xlim=[0, data.index.max()],
     ax=ax2,
 )

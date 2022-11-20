@@ -65,10 +65,6 @@ It demonstrates, that all websites are successfully reconciled by the sharded op
 The sharding overview in [@fig:dashboard-sharding] indicates that all 3 shards are healthy and properly maintain their shard lease.
 It also shows that responsibility for website objects is well-distributed across all 3 shards, with each shard being assinged roughly a third of all objects.
 
-Finally, the measure[^measure] tool is implemented for retrieving the relevant measurements from the Prometheus metrics store via the HTTP API.
-It fetches time series over a given time range and stores the result matrices in CSV-formatted files for further analysis and visualization.
-[@Lst:measure-queries] shows the query configuration that is used to determine the operator's resource usage in the following experiment.
-
 ```yaml
 queries:
 - name: cpu
@@ -82,6 +78,10 @@ queries:
 ```
 
 : Queries configuration for experiments {#lst:measure-queries}
+
+Finally, the measure[^measure] tool is implemented for retrieving the relevant measurements from the Prometheus metrics store via the HTTP API.
+It fetches time series over a given time range and stores the result matrices in CSV-formatted files for further analysis and visualization.
+[@Lst:measure-queries] shows the query configuration that is used to determine the operator's resource usage in the following experiment.
 
 [^kube-prometheus]: [https://github.com/prometheus-operator/kube-prometheus](https://github.com/prometheus-operator/kube-prometheus)
 [^kube-state-metrics]: [https://github.com/kubernetes/kube-state-metrics](https://github.com/kubernetes/kube-state-metrics)
@@ -191,11 +191,15 @@ Hence, the scalability limitations described in [@sec:limitations] are not remov
 It is important to note, that in the evaluated deployment setup, the sharder runs both the sharder and shard components.
 I.e., it is responsible for assigning objects to individual instances as well as running the actual object controllers just like the other instances.
 This results in a significantly higher resource consumption in comparison to the other instances that only run the shard components.
+
 Nevertheless, the presented design does not prescribe that the sharder must also act as a shard at the same time.
 The deployment setup could be adapted to run the shard and sharder in dedicated instance sets (i.e., `Deployments`).
 Based on the presented experiment results, it is expected that this results in a better distribution resource requirements.
 With that, the original scalability limitation in the vertical direction can be overcome entirely and the system's scalability can be increased even further.
-\todo[inline]{equally-sized instances, easier to right-size vertically}
+
+The results also show that the two pods that only run the shard components have a very similar resource usage.
+In a typical singleton controller setup with multiple instances for active-passive HA, there is a much more heterogeneous resource usage as the passive instances consume almost no resources in comparison to the leader.
+With this, the sharded setup also brings advantages for vertical scaling as equally-sized instances can be right-sized more easily to reduce waste of reserved resources.
 
 Last, it is worth noting that the simulated load is still very low in comparison to production deployments of controllers.
 With even more and larger API objects in the system, the difference between the sharder's and singleton's resources usage might be more significant.

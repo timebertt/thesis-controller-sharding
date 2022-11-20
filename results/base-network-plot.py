@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 from common import *
 
-plt.figure(figsize=(10, 6))
+plt.figure(figsize=(10, 8))
 
 ax1 = plt.subplot(221)
 data = read_data('base/sharded-network_receive.csv')
@@ -14,7 +14,7 @@ data.plot(
     legend=False,
     grid=True,
     xlabel='Time in seconds',
-    ylabel='MiB/s',
+    ylabel='Receive Bandwidth in MiB/s',
     xlim=[0, data.index.max()],
     ax=ax1,
 )
@@ -27,7 +27,7 @@ data.plot(
     legend=False,
     grid=True,
     xlabel='Time in seconds',
-    ylabel='MiB/s',
+    ylabel='Receive Bandwidth in MiB/s',
     xlim=[0, data.index.max()],
     ax=ax2,
 )
@@ -42,7 +42,7 @@ data.plot(
     legend=False,
     grid=True,
     xlabel='Time in seconds',
-    ylabel='MiB/s',
+    ylabel='Transmit Bandwidth in MiB/s',
     xlim=[0, data.index.max()],
     ax=ax3,
 )
@@ -55,7 +55,7 @@ data.plot(
     legend=False,
     grid=True,
     xlabel='Time in seconds',
-    ylabel='MiB/s',
+    ylabel='Transmit Bandwidth in MiB/s',
     xlim=[0, data.index.max()],
     ax=ax4,
 )

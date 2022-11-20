@@ -14,7 +14,7 @@ data.plot(
     legend=False,
     grid=True,
     xlabel='Time in seconds',
-    ylabel='MiB',
+    ylabel='Memory usage in MiB',
     xlim=[0, data.index.max()],
     ax=ax1,
 )
@@ -27,7 +27,7 @@ data.plot(
     legend=False,
     grid=True,
     xlabel='Time in seconds',
-    ylabel='MiB',
+    ylabel='Memory usage in MiB',
     xlim=[0, data.index.max()],
     ax=ax2,
 )
