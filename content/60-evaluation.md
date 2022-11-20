@@ -1,6 +1,6 @@
 # Evaluation {#sec:evaluation}
 
-This chapter describes how the implementation (chapter [-@sec:implementation]) is used for evaluation of the proposed design (chapter [-@sec:design]).
+This chapter describes how the implementation ([chapter @sec:implementation]) is used for evaluation of the proposed design ([chapter @sec:design]).
 First, the deployment environment is presented.
 Next, the monitoring setup is introduced which is used to observe the webhosting operator and to take measurements.
 After that, the conducted experiment is described in detail.

@@ -102,7 +102,7 @@ The `Controller` itself ensures that all components including cache, event handl
 All `Controllers` are registered with the `Manager` which then ensures that the controllers are started when leader election is won and stopped as soon as leader election is lost.
 It also injects shared dependencies like client, cache and loggers into the individual controllers.
 
-As part of this thesis, the presented design (chapter [-@sec:design]) was fully implemented in the controller-runtime library in a generic way that allows reusing the mechanisms in all operators built upon the controller-runtime library.
+As part of this thesis, the presented design ([chapter @sec:design]) was fully implemented in the controller-runtime library in a generic way that allows reusing the mechanisms in all operators built upon the controller-runtime library.
 The webhosting operator makes use of the implemented sharding mechanisms in controller-runtime for demonstration and evaluation purposes. 
 
 For adding controller sharding to an operator based on controller-runtime, there are two places involved: when configuring the `Manager` and when setting up a sharded `Controller`.

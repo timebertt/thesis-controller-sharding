@@ -324,7 +324,7 @@ However, this effectively prevents scaling controllers horizontally and distribu
 
 This section summarizes important and proven sharding approaches in well-known distributed databases.
 It is structured by mechanisms that are common across different implementations.
-Chapter [-@sec:design] evaluates which of these mechanisms and approaches can be applied to Kubernetes controllers as well.
+[Chapter @sec:design] evaluates which of these mechanisms and approaches can be applied to Kubernetes controllers as well.
 
 First, nodes of distributed database clusters need to discover their peers and derive information about their state, e.g. whether they are ready to host data and serve queries or not.
 One common approach for this **membership mechanism** is gossip-based and used for example in Cassandra and CockroachDB [@cassandradocs; @cockroachdbdocs].
