@@ -135,37 +135,3 @@ Once the sharder has detected a shard failure and acquired the shard lease as de
 If the shard eventually becomes ready again, objects can be assigned to it again once it acquires its lease just like when a new instance is added.
 A special case occurs when an instance failure is detected after initiating a `drain` operation.
 In this case, the sharder removes the `drain` label itself when updating the `shard` label to prevent performing the `drain` operation with the shard that the object is suppposed to be assigned to.
-
-## Alternatives Considered
-
-\todo{write or remove this section}
-
-<!--
-- sharding by resource
-  - can't be done dynamically / during runtime (or at least that's more difficult)
-  - unbalanced distribution / no control over shard sizes
-  - controllers probably need to list/cache resources, that are handled by other controllers -> overhead, scalability benefits questionable
-  - doesn't provide HA / multiple instances for controllers
-- sharding by namespace
-  - one controller per namespace
-    - easy to implement via operator/meta-controller
-    - dedicated RBAC, ...
-    - still caches cluster-scoped resources
-    - high overhead, scalability benefits questionable
-  - multiple namespaces per controller instance
-    - label namespaces with shard id, reconstruct cache/watches on changes to set of responsible namespaces
-    - -> restart of controller's necessary?
-    - restart of caches/controllers undesirable
-      - restarts are costly
-      - reduces scalability benefits
--->
-
-- preventing concurrency could also be done in another way:
-- consensus/gossip based concurrency control
-  - makes things more complicated: implementation-wise, more communication involved
-  - adds another failure domain: peer-to-peer communication
-- static hash slots (comparable to Redis) instead of consistent hashing with  one lease per slot
-  - high overhead for lease updates; doesn't scale, etcd is bottleneck
-- short period of no reconciliation (~15 seconds) between unassigning and reassigning
-  - would need to prevent unnecessary movement during rolling updates
-  - e.g., move all objects belonging to one virtual node in batch, one virtual node at a time

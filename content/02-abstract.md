@@ -11,5 +11,6 @@ An example implementation demonstrates the feasibility of the proposed design an
 With this, first steps towards horizontally scalable Kubernetes controllers are performed.
 
 \todo[inline]{longer, concrete results}
+\todo[inline]{update README}
 
 \newpage
