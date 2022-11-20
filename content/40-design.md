@@ -19,7 +19,7 @@ In addition to the usual controllers, a new controller is added to all instances
 The sharder is a controller that reconciles API objects of a given kind and assigns them to the individual controller instances.
 It persists object assignments by setting the `shard` label on the objects themselves to the ID of the responsible instance.
 As the sharder itself is responsible for mutating all API objects of a given kind, it must run under the usual leader election.
-I.e., there is only a single active sharder at any given time and additional sharder instances are in stand-by.
+I.e., there is only a single active sharder at any given time and additional sharder instances are in standby.
 The sharder itself watches and caches all API objects of the sharded kind.
 However, it uses a metadata-only watch to minimize the resulting resource usage.
 
@@ -103,7 +103,7 @@ The system's capacity roughly increases linearly with each added instance.
 The sharder itself is not on the critical path for all reconciliations.
 As soon as objects are assigned to an instance, the sharder doesn't need to be available for reconciliations to happen successfully.
 Reconciliations of new object might however be delayed by a short period of time on leader transitions.
-As there are multiple instances of the sharder controller in stand-by, handover should generally happen quickly.
+As there are multiple instances of the sharder controller in standby, handover should generally happen quickly.
 Also, handover can be sped up by releasing the leader election lease on voluntary step down.
 
 ## Preventing Concurrency {#sec:des-concurrency}

@@ -16,6 +16,7 @@ set \parskip to zero for lists to get a harmonized layout
 \listoffigures
 \listoftables
 \listoflistings
+\addcontentsline{toc}{chapter}{List of Code}
 
 \endgroup
 
