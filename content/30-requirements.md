@@ -67,13 +67,13 @@ Scalability limitations and implications of the control plane is out of scope of
 
 ## Requirements for Horizontal Scalability {#sec:requirements}
 
-To scale Kubernetes controllers horizontally\todo{more precise, ref} the restriction of having only a single active instance at any given time needs to be lifted.
+To scale Kubernetes controllers horizontally, the restriction of having only a single active instance at any given time needs to be lifted.
 For this, a concept of sharding for API objects must be introduced which distributes ownership of different objects across multiple instances.
 Nevertheless, it must still be prevented that multiple instances own a single API object at the same time or act on it concurrently.
 
 This section defines precise requirements for a sharding mechanism for Kubernetes controllers.
-\todo{mention sharding in DBs}
-Once these requirements are met, the resources listed in [@tbl:scaling-resources] can be distributed across multiple instances making the implementing controller horizontally scalable.
+The requirements themselves are inspired by the required mechanisms for sharding in distributed databases ([@sec:databases]).
+If these requirements are met, the resources listed in [@tbl:scaling-resources] can be distributed across multiple instances which makes the controller horizontally scalable.
 
 \subsection*{\requirement\label{req:membership}Membership and Failure Detection}
 

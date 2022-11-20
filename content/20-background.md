@@ -7,7 +7,7 @@ It is a distributed system composed of several components, that can be categoriz
 The Kubernetes control plane consists of etcd and API server for storing cluster state and a set of controllers for managing the cluster's worker nodes and the workload itself.
 Each worker node hosts a cluster agent called kubelet, a container runtime and other system components that are responsible for tasks like networking, monitoring, etc. [@k8sdocs]
 
-![Kubernetes Cluster Architecture [@k8sdocs]](../assets/cluster-architecture.pdf)
+![Kubernetes cluster architecture [@k8sdocs]](../assets/cluster-architecture.pdf)
 
 **etcd** [@etcddocs] is the only stateful component of the Kubernetes cluster architecture.
 It is a consistent key-value store, that is used by the API server for storing the entire cluster state.
@@ -238,7 +238,7 @@ Most of them are implemented in libraries, mainly client-go, the official Kubern
 Theoretically, controllers can be implemented in any arbitrary programming language.
 However, most controllers use go in order to benefit from the matured and performance-optimized libraries that the official Kubernetes controllers are based on themselves. [@samplecontroller]
 
-![Building Blocks of a Controller [@samplecontroller]](../assets/controller-components.jpeg)
+![Building blocks of a controller [@samplecontroller]](../assets/controller-components.jpeg)
 
 A controller's **cache** is responsible for watching the controller's object type on the API server, inform the controller about changes to them and make the objects available to the controller in memory in form of an indexed store.
 It therefore starts a reflector that lists and watches a given object type as described in section [-@sec:apimachinery].
@@ -309,7 +309,7 @@ spec:
   renewTime: "2022-06-16T08:56:17.146876Z"
 ```
 
-: Example Lease Object {#lst:lease}
+: Example Lease {#lst:lease}
 
 All instances carry a unique identity, composed of pod name and container ID or any other unique identifier for the instance's process.
 If there currently is no active leader, all instances try to create or update the respective object to specify their identity.
