@@ -71,7 +71,7 @@ Consistent hashing is chosen because it minimizes movement on addition and remov
 Also, it provides a simple and deterministic algorithm for determining the responsible shard solely based on the set of available instances.
 Therefore, no state of the partitioning algorithm must be stored apart from the instance states available through the membership mechanism ([@sec:des-membership]).
 The sharder can simply reconstruct the hash ring based on this information after a restart or leader transition without risking inconsistency or unstable assignments.
-In order to provide a balanced distribution even with a small number of instances, every instance ID is mapped to a preconfigured number of tokens on the hash ring -- known as "virtual nodes" [@stoica2001chord].
+In order to provide a balanced distribution even with a small number of instances, every instance ID is mapped to a preconfigured number of tokens on the hash ring – known as "virtual nodes" [@stoica2001chord].
 
 For determining ownership of a given API object, a partition key is derived from the object's metadata.
 By default, it consists of the object's API group, kind, namespace and name.

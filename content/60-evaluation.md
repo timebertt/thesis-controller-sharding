@@ -166,7 +166,7 @@ The other two shards' CPU usage is about 48% of the singleton's usage on average
 
 ![Memory usage by pod](../results/base-memory.pdf){#fig:base-memory}
 
-The comparison of the pods' memory usage ([@fig:base-memory]) reveals that the sharder's memory usage is almost as high as the singleton's memory usage -- similar to the CPU usage.
+The comparison of the pods' memory usage ([@fig:base-memory]) reveals that the sharder's memory usage is almost as high as the singleton's memory usage – similar to the CPU usage.
 On average, the sharder's RSS is about 89% of the singleton's RSS.
 The other two shards use significantly less memory, roughly 40% as much as the singleton.
 

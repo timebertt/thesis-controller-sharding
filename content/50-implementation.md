@@ -86,7 +86,7 @@ The reconciliations themselves are very short, making the controller responsive 
 ## Architecture
 
 The webhosting operator is leveraging the controller-runtime[^controller-runtime] library.
-The library provides reusable constructs for building custom Kubernetes controllers -- operators -- in the Go programming language.
+The library provides reusable constructs for building custom Kubernetes controllers – operators – in the Go programming language.
 In controller-runtime, the `Manager` is the most important construct.
 A `Manager` is initialized and started once per operator as the root component and manages all other components like controllers, webhook server and handlers, leader election, metrics endpoints, loggers, etc.
 

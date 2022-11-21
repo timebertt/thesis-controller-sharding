@@ -14,7 +14,7 @@ This is done to prevent controllers from performing uncoordinated and conflictin
 If the current leader stops or loses leadership (e.g., during a rolling update or network partition) another instance takes over leadership and becomes the active instance.
 Such a setup can be described as an "active-passive high-availability (HA) setup" [@ahluwalia2006high].
 It minimizes controller downtime and facilitates fast failovers.
-However, it cannot be considered horizontal scaling because work is not distributed across multiple instances [@bondi2000characteristics].
+However, it cannot be considered horizontal scaling because work is not distributed across multiple instances [@bondi2000characteristics; @jogalekar2000evaluating].
 Because of this, Kubernetes controllers are not horizontally scalable.
 
 This restriction imposes scalability limitations for Kubernetes controllers.

@@ -7,7 +7,7 @@ Afterwards, it analyzes what is required to make Kubernetes controllers horizont
 
 Kubernetes controllers need to prevent uncoordinated and conflicting actions from different instances on the same API objects.
 Therefore, controllers currently use leader election mechanisms to determine a single active instance at any given time.
-Even if multiple instances are running at the same time, only a single instance carries out the actual work -- the current leader.
+Even if multiple instances are running at the same time, only a single instance carries out the actual work – the current leader.
 This means, that a controller's work cannot be distributed across multiple controller instances.
 In the context of this thesis, such a setup is referred to as a "singleton controller" setup.
 
