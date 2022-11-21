@@ -17,7 +17,7 @@ To prevent uncoordinated and conflicting actions of concurrent reconciliations, 
 Because of this, reconciliations cannot be distributed among multiple controller instances which effectively limits the system's capacity and throughput by the available machine sizes and network bandwidth of the underlying infrastructure.
 I.e., leader election prevents Kubernetes controllers from being horizontally scalable.
 
-This thesis presents first steps towards horizontally scalable Kubernetes controllers by introducing a design for distributing reconciliation of API objects across multiple controller instances, i.e., sharding for Kubernetes controllers.
+This thesis presents the first steps towards horizontally scalable Kubernetes controllers by introducing a design for distributing the reconciliation of API objects across multiple controller instances, i.e., sharding for Kubernetes controllers.
 It shows that proven sharding mechanisms used in distributed databases can be applied to the problem space of Kubernetes controllers as well to overcome the mentioned scalability limitation.
 The proposed design includes lease-based membership and failure detection as well as consistent hashing for partitioning.
 Kubernetes API machinery primitives – namely, labels and label selectors – facilitate coordination between controller instances and prevent concurrent reconciliations of individual objects by multiple instances.
@@ -27,4 +27,4 @@ Systematic load test experiments show that the sharding implementation achieves 
 However, the experiment results also point out that one of the controller instances always has a high resource footprint in comparison to the other shards which limits the scalability of the system.
 Nevertheless, future work can perform optimizations of the presented design to overcome the discovered flaw.
 
-The presented design and implementation allow to scale Kubernetes controllers horizontally providing potential for a wide range of applications in the Kubernetes ecosystem.
+The presented design and implementation allow scaling Kubernetes controllers horizontally providing potential for a wide range of applications in the Kubernetes ecosystem.

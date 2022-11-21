@@ -315,9 +315,9 @@ All instances carry a unique identity, composed of pod name and container ID or 
 If there currently is no active leader, all instances try to create or update the respective object to specify their identity.
 As the API server denies concurrent writes to the same object, only a single write request can be successful, which determines the elected leader.
 Once a given instance has successfully acquired leadership, it regularly renews its leadership by updating `renewTime`.
-As long as the active leader renews the lease before `leaseDurationSeconds` expires, it continues to perform reconciliations and other instances need to stay in standby.
+As long as the active leader renews the lease before `leaseDurationSeconds` expires, it continues to perform reconciliations and other instances need to stay on standby.
 If however, the leader fails to renew its lease in time (loss of leadership), it must stop performing any actions and a new leader is elected.
-In an HA-setup with multiple instances, this mechanism ensures a fast fail-over in case of losing the active leader.
+In an HA-setup with multiple instances, this mechanism ensures a fast failover in case of losing the active leader.
 However, this effectively prevents scaling controllers horizontally and distributing work across multiple instances.
 
 ## Sharding in Distributed Databases {#sec:databases}

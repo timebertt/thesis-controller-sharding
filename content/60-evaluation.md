@@ -145,7 +145,7 @@ Investigating the resource implications of sharding on the control plane compone
 The load test is executed twice: once for the singleton operator and once for the sharded operator.
 For this, the deployment mechanism offers a switch for deploying the operator in either mode.
 In the sharded mode, the operator is deployed with three instances, in the singleton mode only with one instance.
-Note that singleton operators are typically deployed with multiple instances for fast fail-overs (active-passive HA setup) in production environments.
+Note that singleton operators are typically deployed with multiple instances for fast failovers (active-passive HA setup) in production environments.
 As the passive instances of the operator also have a given base resource usage, the total resource usage of system would be higher than in the conducted experiments.
 After each load test the measurements are retrieved from Prometheus via the measure tool.
 Then, the measured resource usages of both test runs are compared to each other.
