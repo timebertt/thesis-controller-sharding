@@ -66,63 +66,63 @@ With this, leases of voluntarily terminated instances as well as failed instance
 
 ## Partitioning
 
-To address requirement \ref{req:partitioning}, a variant of consistent hashing is used as described in [@karger1997consistent; @stoica2001chord].
+To address requirement \ref{req:partitioning}, a variant of consistent hashing is used [@karger1997consistent; @stoica2001chord].
 With this, partitioning is done similarly as in Apache Cassandra [@cassandradocs] and Amazon Dynamo [@dynamo2007] but adapted to use Kubernetes API object metadata as input.
-Consistent hashing is chosen because it minimizes movement on addition and removal of instances.
+Consistent hashing is chosen because it minimizes movement on the addition and removal of instances.
 Also, it provides a simple and deterministic algorithm for determining the responsible shard solely based on the set of available instances.
 Therefore, no state of the partitioning algorithm must be stored apart from the instance states available through the membership mechanism ([@sec:des-membership]).
 The sharder can simply reconstruct the hash ring based on this information after a restart or leader transition without risking inconsistency or unstable assignments.
-In order to provide a balanced distribution even with a small number of instances, every instance ID is mapped to a preconfigured number of tokens on the hash ring – known as "virtual nodes" [@stoica2001chord].
+In order to provide a balanced distribution even with a small number of instances, every instance ID is mapped to a preconfigured number of tokens on the hash ring (virtual nodes) [@stoica2001chord].
 
 For determining ownership of a given API object, a partition key is derived from the object's metadata.
-By default, it consists of the object's API group, kind, namespace and name.
+By default, it consists of the object's API group, kind, namespace, and name.
 This partition key is chosen in order to equally distribute objects of different kinds with the same namespace and name across shards.
-Additionally, the object's UID is added in order to distinguish between different instances of an API object with the same namespace and name.
-As all API objects share these common metadata fields, this approach can be applied to all API resources equally.
+Additionally, the object's UID is added to distinguish between different instances of an API object with the same namespace and name.
+As all API objects share these common metadata fields, this approach can be applied to all API resources likewise.
 Also, it allows the sharder to use lightweight metadata-only watches.
-In order to assign owned objects to the same shard as their owners, the owner's partition key can be determined from the owner reference in the owned object's metadata.
+To assign owned objects to the same shard as their owners, the owner's partition key can be determined from the owner reference in the owned object's metadata.
 
 ## Coordination and Object Assignment
 
-Realizing coordination and object assignment (requirement \ref{req:coordination}) in Kubernetes controllers is much simpler than in distributed databases.
-In contrast to sharding in databases, no request coordination is needed because no client directly communicates with the controller instances.
-Because of this, object assignments don't need to be persisted in a dedicated store or storage section like in Bigtable, MongoDB or Spanner [@bigtable2006; @mongodbdocs; @spanner2013].
+Realizing coordination and object assignment (requirement \ref{req:coordination}) in Kubernetes controllers is very simple in comparison to distributed databases.
+In contrast to sharding in databases, no request coordination is needed because clients don't communicate directly with the controller instances.
+Because of this, object assignments don't need to be persisted in a dedicated store or storage section like in Bigtable, MongoDB, or Spanner [@bigtable2006; @mongodbdocs; @spanner2013].
 Furthermore, instances don't need to be aware of assignment information of objects they are not responsible for.
 Hence, there is no need to propagate this information throughout the system as it is done in many distributed databases [@dynamo2007; @cassandradocs].
 
-In the presented design, object assignment is done by the sharder controller by labelling API objects with the instance ID of the responsible shard.
+In the presented design, object assignment is done by the sharder controller by labeling API objects with the instance ID of the responsible shard.
 For each object kind that should be sharded, one sharder controller is started that uses the mechanisms described above for discovering available instances and determining assignments.
-Persisting assignments in the API objects themselves is done in order to make use of existing controller infrastructure for coordination.
-By labelling the objects themselves, controllers can simply use a filtered watch to retrieve all API objects that are assigned to them.
+Persisting assignments in the API objects themselves are done to make use of existing controller infrastructure for coordination.
+By labeling the objects themselves, controllers can simply use a filtered watch to retrieve all API objects that are assigned to them.
 For this, a label selector on the `shard` label for the shards' instance ID is added to the controllers' watches.
 With this, the controllers' caches and reconciliations are already restricted to the relevant objects and no further coordination between controllers is needed.
 Additionally, controllers already rebuild watch connections on failures or after restarts automatically.
-This means, object assignment information is automatically rebuilt on failures or restarts without any additional implementation.
+This means object assignment information is automatically rebuilt on failures or restarts without any additional implementation.
 Using a filter watch and cache additionally addresses requirement \ref{req:scale-out}, as all relevant resource requirements ([@tbl:scaling-resources]) are distributed across multiple instances.
 The system's capacity roughly increases linearly with each added instance.
 
 The sharder itself is not on the critical path for all reconciliations.
 As soon as objects are assigned to an instance, the sharder doesn't need to be available for reconciliations to happen successfully.
-Reconciliations of new object might however be delayed by a short period of time on leader transitions.
-As there are multiple instances of the sharder controller on standby, handover should generally happen quickly.
-Also, handover can be sped up by releasing the leader election lease on voluntary step down.
+Reconciliations of new objects might however be delayed by a short period on leader transitions.
+As there are multiple instances of the sharder controller on standby, handover generally happens quickly.
+Also, handover can be sped up by releasing the leader election lease on voluntary step-down.
 
 ## Preventing Concurrency {#sec:des-concurrency}
 
 With the presented design, concurrent writes from different instances to the same API object are already prevented as long as object assignments don't change.
-To fulfill requirement \ref{req:concurrency} concurrent mutating reconciliations must additionally be prevented when moving objects between shards. 
-In this case, the sharder must ensure the old instance has stopped working on the given object before another instance picks it up.
+To fulfill requirement \ref{req:concurrency}, concurrent mutating reconciliations must additionally be prevented when moving objects between shards.
+In this case, the sharder must ensure that the old instance has stopped working on the given object before another instance picks it up.
 
-The first case that needs to be considered for this is when moving objects from a ready shard to another shard.
+The first case that needs to be considered is when moving objects from a ready shard to another shard.
 This can be required for rebalancing during scale-out or a rolling update, i.e. when a new instance is added.
 As the controller system is asynchronous and pull-/watch-based, the sharder cannot immediately reassign objects.
-The watch connection and cache of the old instance might receive the reassignment event later than the new instance, which could lead to conflicting reconciliations.
+The watch connection and cache of the old instance might receive the reassignment event later than the new instance, which could lead to concurrent and conflicting reconciliations.
 In other words, the sharder can't know if and when an instance has stopped working on an object that is supposed to be moved.
 To address this challenge, the old instance needs to acknowledge the reassignment and confirm it has stopped working on the object.
 When the sharder needs to move an object from a ready shard to another, it adds a `drain` label indicating that the object should be moved.
 As soon as the old shard observes the `drain` label it must remove it from the object as well as the `shard` label, marking the object as unassigned.
-When the sharder observes that the object is unassigned it reassigns it to the desired instance like it does for new objects.
-Following this protocol, concurrent reconciliations by old and new shard are prevented.
+When the sharder observes that the object is unassigned it reassigns it to the desired instance as it does for new objects.
+Following this protocol, concurrent reconciliations by the old and the new shard are prevented.
 Also, it facilitates fast rebalancing with ready and responsive instances.
 
 A second case to consider is when moving objects from a terminating instance to a ready instance.
@@ -135,4 +135,4 @@ The last case that needs to be considered is when moving objects from a dead ins
 Once the sharder has detected a shard failure and acquired the shard lease as described in [@sec:des-membership], objects are reassigned immediately without performing a `drain` operation.
 If the shard eventually becomes ready again, objects can be assigned to it again once it acquires its lease just like when a new instance is added.
 A special case occurs when an instance failure is detected after initiating a `drain` operation.
-In this case, the sharder removes the `drain` label itself when updating the `shard` label to prevent performing the `drain` operation with the shard that the object is suppposed to be assigned to.
+In this case, the sharder removes the `drain` label by itself when updating the `shard` label to prevent performing the `drain` operation with the shard that the object is supposed to be assigned to.
