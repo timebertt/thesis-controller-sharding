@@ -53,7 +53,7 @@ Additionally, the webhosting exporter is used to collect metrics about the state
 ![Sharding dashboard](../assets/dashboard-sharding.png){#fig:dashboard-sharding}
 
 Finally, Prometheus is configured to collect metrics from the webhosting operator as well.
-It exposes metrics from the controller-runtime library about controllers, workqueues, and the Kubernetes client ([@fig:dashboard-controller-runtime]).
+It exposes metrics from the controller-runtime library about controllers, work queues, and the Kubernetes client ([@fig:dashboard-controller-runtime]).
 For example, these metrics offer information on the rate and duration of reconciliations, and for how long objects are queued before being reconciled.
 Additionally, metrics are added about the sharder controllers' actions, i.e. assignment and drain operations.
 

@@ -180,23 +180,23 @@ Under certain circumstances, field selectors can however reduce processing effor
 ## API Extensions {#sec:apiextensions}
 
 The Kubernetes API server features several mechanisms for extending the API and integrating third-party components.
-These include, most importantly but not exhaustively, webhooks and custom resources.
+These include most importantly: webhooks and custom resources.
 Webhooks can be registered via dedicated API objects and provide means to validate or mutate API requests.
 However, webhooks are not discussed in further detail in this thesis.
 Custom resources, on the other hand, offer options to augment the set of built-in API resources with additional resources that follow the same API semantics. [@k8sdocs]
 
 There are two ways to register custom resources with the API server: via `APIServices` (often referred to as API aggregation) and `CustomResourceDefinitions` (CRDs).
 An `APIService` is a usual API object that configures the API server to delegate API requests for a certain set of `GroupVersions` to another API server (extension API server), that is typically deployed as a dedicated component into the cluster.
-This extension API server needs to implement the same semantics as the Kubernetes API server itself, so that clients can use the extended resources by the same means as built-in resources.
+This extension API server needs to implement the same semantics as the Kubernetes API server itself so that clients can use the extended resources by the same means as built-in resources.
 From a client's perspective, custom resources are available at the same endpoint (via the Kubernetes API server) and follow the same characteristics as described in [@sec:resourcemodel; @sec:apimachinery].
-Extension API servers are developed, deployed and managed independently of the Kubernetes API server and thus feature full flexibility but also require a certain amount of development and operations effort.
+Extension API servers are developed, deployed, and managed independently of the Kubernetes API server and thus feature full flexibility but also require a certain amount of development and operations effort.
 
 In contrast to that, CRDs offer a lightweight mechanism for augmenting the Kubernetes API with custom resources, though with less flexibility.
 `CustomResourceDefinitions` are API objects that each register a single custom resource with the API server in a purely declarative manner.
-Most importantly, they specify the API group, versions and kind along with an optional API schema.
+Most importantly, they specify the API group, versions, and kind along with an optional API schema.
 As soon as CRDs are created, the Kubernetes API server starts serving endpoints for the specified resources.
-Although the API server doesn't know the concrete structure and meaning of the resources, it offers the exact same characteristics for such API objects.
-This includes the same object structure (metadata, spec and status), the same API request semantics (including watch requests), discovery endpoints, label selectors and so on. [@k8sdocs; @hausenblas2019programming]
+Although the API server doesn't know the concrete structure and meaning of the resources, it offers the same characteristics for such API objects.
+This includes the same object structure (metadata, spec, and status), the same API request semantics (including watch requests), discovery endpoints, label selectors, and so on. [@k8sdocs; @hausenblas2019programming]
 
 ```yaml
 apiVersion: apiextensions.k8s.io/v1
@@ -229,68 +229,68 @@ By leveraging these mechanisms, the Kubernetes API can be extended to provide de
 However, custom resources as such don't implement any corresponding business logic.
 For this, additional controllers can be deployed that implement the logic for realizing the desired state declared by the API objects.
 This combination of a custom resource and a custom controller is often referred to as the "operator pattern", where the custom controller is referred to as the "operator".
-Operators can be used to codify any kind of operation knowledge for applications and represent a powerful mechanism for running cloud-native workloads on Kubernetes. [@hausenblas2019programming]
+Operators can be used to codify any kind of operational knowledge for applications and represent a powerful mechanism for running cloud-native workloads on Kubernetes. [@hausenblas2019programming]
 
 ## Controllers
 
-Kubernetes controllers are composed of the following building blocks: cache, event handlers, workqueue and worker routines.
+Kubernetes controllers are composed of the following building blocks: cache, event handlers, work queue, and worker routines.
 Most of them are implemented in libraries, mainly client-go, the official Kubernetes API client for the go programming language.
 Theoretically, controllers can be implemented in any arbitrary programming language.
-However, most controllers use go in order to benefit from the matured and performance-optimized libraries that the official Kubernetes controllers are based on themselves. [@samplecontroller]
+However, most controllers use go to benefit from the matured and performance-optimized libraries that the official Kubernetes controllers are based on as well. [@samplecontroller]
 
 ![Building blocks of a controller [@samplecontroller]](../assets/controller-components.jpeg)
 
-A controller's **cache** is responsible for watching the controller's object type on the API server, inform the controller about changes to them and make the objects available to the controller in memory in form of an indexed store.
-It therefore starts a reflector that lists and watches a given object type as described in section [-@sec:apimachinery].
+A controller's **cache** is responsible for watching the controller's object type on the API server, informing the controller about changes to the objects, and making the objects available to the controller in memory in form of an indexed store.
+Therefore, it starts a so-called reflector that lists and watches a given object type as described in section [-@sec:apimachinery].
 The reflector emits corresponding delta events and adds them to a queue.
 An informer then reads these events from the queue and updates changed objects in the store accordingly for later retrieval by the controller.
-The store (indexer) is a flat key-value store with additional indices for increasing performance of namespaced lookups or lookups with field selectors, that the controller frequently uses.
+The store (indexer) is a flat key-value store with additional indices for increasing the performance of namespaced lookups or lookups with field selectors, that the controller frequently uses.
 In addition to saving objects in the store, the informer also distributes notifications to all event handlers registered by the controller.
-Note, that the store is not a write-trough cache, meaning controllers might read an old version of the object they modified from the cache, until the watch connection received the respective change event.
+Note, that the store is not a write-trough cache, meaning controllers might read an old version of the object they modified from the cache until the watch connection receives the respective change event.
 
 Controllers can use caches for multiple object types if they work with different kinds of objects during reconciliation or listen for changes to related objects.
 Therefore, controller caches are typically shared between all controllers of a single binary in order to reduce processing effort and memory consumption (`SharedIndexInformer`).
-Caches can also be configured to use filtered list and watch requests (e.g., by namespace or label) in order to reduce overhead for processing and storing objects that controllers are not interested in.
+Caches can also be configured to use filtered list and watch requests (e.g., by namespace or label) to reduce overhead for processing, transferring, and storing objects that controllers are not interested in.
 
-Controllers add **event handlers** to informers in order to be notified for all important watch events.
-Typically, event handlers perform basic filtering for relevant changes on the changed object to determine whether the controller needs to act on it or not.
-This is done to eliminate unnecessary reconciliation work.
-If work needs to be done on the watched object, event handlers add the object's key (`namespace/name`) to the workqueue.
-However, event handlers don't always enqueue the changed object itself.
-Instead, they might also perform mapping between watched objects and objects that the controller is responsible for.
+Controllers add **event handlers** to informers for notifications about all important watch events.
+Typically, event handlers perform basic filtering for relevant changes based on the changed object to determine whether the controller needs to act on it or not.
+This is done to reduce unnecessary reconciliation work.
+If work needs to be done on the watched object, event handlers add the object's key (`namespace/name`) to the work queue.
+However, event handlers don't always enqueue a key for the changed object itself.
+Instead, they might also perform a mapping between watched objects and objects that the controller is responsible for.
 For example, the `Job` controller manages `Pods` for carrying out the actual work and adds an `ownerReference` to the owned `Pods`.
-When a `Pod` completes its work, the `Job` controller is notified of the status change via a watch event and enqueues the owning `Job` designated in `Pod.metadata.ownerReferences`.
+When a `Pod` completes its work, the `Job` controller is notified of the status change via a watch event and enqueues the owning `Job` designated in `Pod.metadata.ownerReferences` to update the `Job` object's status accordingly.
 
-A controller's **workqueue** centrally keeps track of all keys of objects that the controller needs to perform actions on.
+A controller's **work queue** centrally keeps track of all keys of objects that the controller needs to perform actions on.
 It decouples event handling and actual reconciliation: controllers might only act upon objects once taken from the queue, but never in event handlers.
-The workqueue also keeps track of all objects that are currently being processed by worker routines.
+The work queue also keeps track of all objects that are currently being processed by worker routines.
 It ensures, that a given object key is only picked up by a single worker at a time, even if the key is added to the queue multiple times.
 It only emits a key again once the processing worker has marked the key as processed.
-Furthermore, the workqueue implements multiple mechanisms that are important to the controller's stability and scalability.
+Furthermore, the work queue implements multiple mechanisms that are important to the controller's stability and scalability.
 For example, if work on a given object fails because of some error, the object's key is re-queued, so that it is picked up by a worker again.
-The workqueue keeps track of retries and applies an exponential backoff and a jitter in order to break periodicity of the system.
+The work queue keeps track of retries and applies an exponential backoff strategy and jittering in order to break the periodicity of the system.
 Additionally, it applies overall and per-item rate limiting to the key emission rate to protect the controller from load spikes.
 
 Eventually, the controller's actual work is carried out by **worker routines**, also referred to as "control loops".
-Note however, that they are not actually looping over a single object as often depicted.
-Instead, they react on relevant changes as notified by the watch connection and pick up a single key from the workqueue at a time.
+Note, however, that they are not looping over a single object as often depicted.
+Instead, they react to relevant changes as notified by the watch connection and pick a single key from the work queue at a time.
 Workers mark the key as being processed, retrieve the full object from the cache and finally carry out the actual business logic of the controller.
 If implemented in go, workers run as concurrent goroutines.
-The number of concurrent workers reading from the queue and performing work can be raised in order to increase throughput and decrease wait time.
+The number of concurrent workers reading from the queue and performing work can be raised in order to increase throughput and decrease queue wait time.
 
-Controllers take the desired state of objects, observe the actual state and perform actions to converge both.
+Controllers take the desired state of objects, observe the actual state and perform actions to reconcile both.
 Generally, controllers need to be level-driven, meaning their actions should be based on observations of the full state independent of any intermediate state changes.
-However, controllers are typically edge-triggered for increasing scalability of the system and reducing unnecessary work and network transfer.
-Therefore, they use API server watches instead of long-pulling.
+However, controllers are typically edge-triggered for increasing the scalability of the system and reducing unnecessary work and network transfer.
+Therefore, they use API server watches instead of long-pulling. [@k8sdocs; @hausenblas2019programming]
 
 ## Leader Election {#sec:leader-election}
 
-There might be multiple instances of a single controller binary, e.g., during rolling updates or in HA-setups.
-In order to prevent conflicting actions of multiple instances, one instance is elected to be the active one – the leader.
+There might be multiple instances of a single controller binary, e.g., during rolling updates or in HA setups.
+To prevent conflicting actions of multiple instances, one instance is elected to be the active one – the leader.
 Controllers may only perform reconciliations when the instance is the current leader.
 The leader election mechanism follows a simple protocol based on Kubernetes API objects.
 For this purpose, dedicated `Lease` objects are used, `Endpoints` and `ConfigMaps` were used historically.
-In these objects, a leader election record is persisted ([@lst:lease]), that states the current leader as well as when the lease has been acquired and for how long it is valid.
+In these objects, a leader election record is persisted ([@lst:lease]), which states the current leader as well as when the lease has been acquired and for how long it is valid.
 
 ```yaml
 apiVersion: coordination.k8s.io/v1
@@ -312,33 +312,32 @@ spec:
 : Example Lease {#lst:lease}
 
 All instances carry a unique identity, composed of pod name and container ID or any other unique identifier for the instance's process.
-If there currently is no active leader, all instances try to create or update the respective object to specify their identity.
-As the API server denies concurrent writes to the same object, only a single write request can be successful, which determines the elected leader.
+If there currently is no active leader, all instances try to create or update the respective object to become the leader.
+As the API server denies concurrent writes to the same object (optimistic concurrency control, [@sec:apimachinery]), only a single write request can be successful, which determines the elected leader.
 Once a given instance has successfully acquired leadership, it regularly renews its leadership by updating `renewTime`.
 As long as the active leader renews the lease before `leaseDurationSeconds` expires, it continues to perform reconciliations and other instances need to stay on standby.
 If however, the leader fails to renew its lease in time (loss of leadership), it must stop performing any actions and a new leader is elected.
-In an HA-setup with multiple instances, this mechanism ensures a fast failover in case of losing the active leader.
-However, this effectively prevents scaling controllers horizontally and distributing work across multiple instances.
+In an HA setup with multiple instances, this mechanism ensures fast failovers in case of losing the active leader.
 
 ## Sharding in Distributed Databases {#sec:databases}
 
-This section summarizes important and proven sharding approaches in well-known distributed databases.
+This section summarizes important and proven sharding approaches in well-known distributed databases [@abadi2009data; @agrawal2004integrating].
 It is structured by mechanisms that are common across different implementations.
 [Chapter @sec:design] evaluates which of these mechanisms and approaches can be applied to Kubernetes controllers as well.
 
 First, nodes of distributed database clusters need to discover their peers and derive information about their state, e.g. whether they are ready to host data and serve queries or not.
 One common approach for this **membership mechanism** is gossip-based and used for example in Cassandra and CockroachDB [@cassandradocs; @cockroachdbdocs].
-In this approach, all nodes of the system are equal and there is no designated leader 
- or central instance.
+In this approach, all nodes of the system are equal and there is no designated leader
+or central instance.
 Nodes announce themselves to the cluster and discover their peers by communicating with the cluster.
-Node information is then propagated to other nodes via ongoing communication between peers (gossip).
+Node information is then propagated to other nodes via ongoing communication between peers, which is called gossip.
 Several nodes can be used as seed nodes, which are used to bootstrap the gossip protocol.
 If a node failure occurs the other nodes independently detect the failure based on the gossiped information.
 
-Bigtable implements a different approach for discovering membership information, which is based on leases in a central lock store [@bigtable2006].
+Bigtable implements a different approach to discovering membership information, which is based on leases in a central metadata store [@bigtable2006].
 Here, individual nodes don't communicate with each other for exchanging membership information but instead announce themselves to the master node by acquiring individual locks in Chubby, a highly-available lock service [@chubby2006].
 As long as an instance is alive, it renews its lock lease to signal readiness to the master and serves data to clients.
-The lock is deleted on termination to inform the master about voluntary disruption.
+The lock is deleted on termination to inform the master about the voluntary disruption.
 The master watches the servers directory in Chubby and asks instances for the lock status to discover ready instances.
 If an instance fails to report a healthy lock, the master tries to acquire the instance's lock to ensure Chubby is reachable.
 If this succeeds, the master has successfully detected the instance failure and deletes the corresponding lock in Chubby so that the instance will not serve data again.
@@ -347,38 +346,39 @@ Another approach for implementing the membership mechanism includes frequent com
 After discovering available instances, sharded databases need an **algorithm for partitioning data**, i.e., for determining which data is stored by which instance.
 For this, each unit of data holds a partition key that is used as input for the sharding algorithm.
 Partition keys are typically backed by a physical index and often are part of a primary key structure.
-In many database systems, application developers can designate a certain column as the partition key which allows to co-locate related data.
-If there is a natural sharding key in the applications business model, this can be used for example to place all data belonging to the same workspace, project or similar on the same servers for improved query performance.
-While the concept of partition keys is common among distributed databases, there are different approaches for the actual sharding mechanism that assigns subsets of data to instances.
+In many database systems, application developers can designate a certain column as the partition key which allows co-locating related data.
+If there is a natural sharding key in the applications business model, it can be used for example to place all data belonging to the same workspace, project, or similar structures on the same servers for improved query performance.
+While the concept of partition keys is common among distributed databases, there are different approaches for the actual partitioning algorithm that assigns subsets of data to instances. [@agrawal2004integrating]
 
-Bigtable, MongoDB, CockroachDB and Spanner for example have some form of master instance to control data partitioning using some arbitrary logic.
+Bigtable, MongoDB, CockroachDB, and Spanner for example have some form of master instance to control data partitioning using some arbitrary logic.
 In these systems, a central instance decides where to place data according to current server utilization, placement constraints, and similar indicators.
-The partitioning information is persisted in metadata tables or metadata key ranges respectively that are known to all instances to allow servers to discover where a given data subset is located for querying. [@bigtable2006; @mongodbdocs; @cockroachdbdocs; @spanner2013]
+The partitioning information is persisted in metadata tables or metadata key ranges respectively that are known to all instances.
+This allows all servers to discover where a given data subset is located for querying. [@bigtable2006; @mongodbdocs; @cockroachdbdocs; @spanner2013]
 
 On the other hand, Cassandra and Dynamo use consistent hashing as a partitioning algorithm [@karger1997consistent] – also known as ring hashing.
-In consistent hashing, servers and partition keys are both hashed onto a ring.
+In consistent hashing, servers and partition keys are both hashed onto an imaginary ring.
 Data is assigned to the server with the key that has the smallest hash larger than the hash of the partition key.
-When new servers are added to or existing servers are removed from a ring with $n$ servers, only $1/n$ of all entries are moved to another server.
-This provides near optimal stability of partitioning in dynamic environments during scale-out/in.
-A common improvement of consistent hashing is to use so-called virtual nodes for achieving better distribution of keys in clusters with a small amount of members.
-For this, each server is mapped to multiple tokens that are hashed onto the ring. [@stoica2001chord; @dynamo2007; @cassandradocs]
+When new servers are added to the ring or existing servers are removed from a ring with $n$ servers, only $1/n$ of all entries are moved to another server on average.
+This provides near-optimal stability of partitioning in dynamic environments during scale-out/in operations.
+A common improvement of consistent hashing is to use so-called virtual nodes for achieving a better distribution of keys in clusters with a small number of members.
+For this, each instance is mapped to multiple tokens that are hashed onto the ring. [@stoica2001chord; @dynamo2007; @cassandradocs]
 
-The third important sharding mechanism in distributed databases is **coordination of client requests and storage of assignments**.
+The third important sharding mechanism in distributed databases is the **coordination of client requests** and the **storage of assignments**.
 Consistent hashing is deterministic given the partition key and cluster members' statuses.
 Hence, there is no need to store data assignments in a central place in Cassandra and Dynamo.
-Instead, data locality can be determined by all nodes independently based on gossiped membership information.
+Instead, data locality can be determined by all nodes independently, e.g., based on the gossiped membership information.
 In Cassandra and Dynamo, clients can send requests to any cluster node.
 The node then takes care of determining the responsible server for the queried data and proxies the request accordingly [@cassandradocs; @dynamo2007].
 Similarly, clients can also send requests to any cluster member of a CockroachDB cluster, which looks up and caches data locality from the metadata key range and proxies them to the responsible node accordingly [@cockroachdbdocs].
-In contrast to that, Bigtable stores the location of its metadata table in Chubby, which clients need to request in order to determine data locality.
+In contrast to that, Bigtable stores the location of its metadata table in Chubby, which clients need to request to determine data locality.
 For each request, clients first locate the requested data from the metadata table or possibly from a cache and then send the request to the responsible server [@bigtable2006].
 In MongoDB and Spanner, there are dedicated server instances that don't store data and only respond to requests.
-These proxies are responsible for locating data in the cluster and cache that information for further client requests [@mongodbdocs; @spanner2013].
+These proxies are responsible for locating data in the cluster and caching that information for further client requests [@mongodbdocs; @spanner2013].
 One important aspect of all approaches to request coordination in distributed databases is that there is no single point of failure or bottleneck on the request path, that all client communication goes through.
 
-Last, many sharded databases replicate individual data subsets to provide high availability and durability.
-Typically, there is some form of **concurrency control** involved in order to provide consistency despite concurrent requests to different replicas of the same data subset.
+Last, many sharded database setups also replicate data subsets to provide high availability and durability.
+Typically, there is some form of **concurrency control** involved to provide consistency despite concurrent requests to different replicas of the same data subset.
 Depending on the database's consistency guarantees, different approaches are applied.
 Cassandra and Dynamo use timestamp versioning per data item and resolve conflicts by applying the "last write wins" policy [@cassandradocs; @dynamo2007].
 In other database systems, a form of distributed consensus algorithm is leveraged to provide concurrency control.
-Examples for this are Paxos as used in Chubby [@chubby2006], raft as used in etcd [@etcddocs] or multi-group derivatives of them as used in Spanner and CockroachDB [@spanner2013; @cockroachdbdocs].
+Examples of this are Paxos as used in Chubby [@chubby2006], raft as used in etcd [@etcddocs], or multi-group derivatives of them as used in Spanner and CockroachDB [@spanner2013; @cockroachdbdocs].

@@ -98,7 +98,7 @@ It is invoked with a reconciliation request containing an object's name and name
 On each invocation, it has to ensure that the actual state of the system matches the desired state of the given object, i.e. perform reconciliation of the object.
 The configured watches and event handlers are responsible for enqueuing reconciliation requests in response to watch events.
 Typically, `Predicates` are used to filter for relevant watch events emitted by the API server.
-The `Controller` itself ensures that all components including cache, event handlers, workqueue and worker routines are correctly set up.
+The `Controller` itself ensures that all components including cache, event handlers, work queue and worker routines are correctly set up.
 All `Controllers` are registered with the `Manager` which then ensures that the controllers are started when leader election is won and stopped as soon as leader election is lost.
 It also injects shared dependencies like client, cache and loggers into the individual controllers.
 
