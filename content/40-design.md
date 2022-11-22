@@ -1,8 +1,8 @@
 # Design {#sec:design}
 
 This chapter presents a design for implementing sharding in Kubernetes controllers to make them horizontally scalable.
-The presented design includes well-known approaches for sharding in distributed databases and applies them to the problem in Kubernetes controllers.
-Approaches are chosen to fulfill the requirements in [@sec:requirements].
+The presented design includes well-known approaches for sharding in distributed databases and applies them to the problem space of Kubernetes controllers.
+Approaches are chosen to fulfill the requirements listed in [@sec:requirements].
 First, the overall architecture of the design is introduced.
 After that, different aspects of the design are described in detail.
 
@@ -10,35 +10,36 @@ After that, different aspects of the design are described in detail.
 
 ![Kubernetes controller sharding architecture](../assets/design-overview.pdf)
 
-The design architecture heavily builds upon existing mechanisms of the Kubernetes API and controllers.
-It reuses established approaches from distributed databases and maps them to Kubernetes in a way that sharding is accomplished in a "Kubernetes-native" manner in order to leverage as much of the existing controller infrastructure as possible.
+The design heavily builds upon existing mechanisms of the Kubernetes API and controllers.
+It reuses established approaches from distributed databases and maps them to Kubernetes to implement sharding in a "Kubernetes-native" manner.
+This is done to leverage as much of the existing controller infrastructure as possible.
 
-Firstly, multiple instances of a single controller are deployed with the same configuration.
-All instances are equal, though they are differentiated by a unique instance ID.
-In addition to the usual controllers, a new controller is added to all instances: the sharder.
-The sharder is a controller that reconciles API objects of a given kind and assigns them to the individual controller instances.
+Firstly, multiple instances of the controller are deployed with the same configuration.
+All instances are equal, though one of them is elected to be the "sharder" using the usual lease-based leader election mechanism.
+In addition to running the main controllers, the sharder is also responsible for performing sharding-related tasks.
+Most importantly, this includes assigning API objects that should be sharded to individual controller instances.
 It persists object assignments by setting the `shard` label on the objects themselves to the ID of the responsible instance.
-As the sharder itself is responsible for mutating all API objects of a given kind, it must run under the usual leader election.
-I.e., there is only a single active sharder at any given time and additional sharder instances are on standby.
-The sharder itself watches and caches all API objects of the sharded kind.
-However, it uses a metadata-only watch to minimize the resulting resource usage.
+The sharder components themselves are responsible for all API objects and bootstrapping the sharding mechanism.
+Hence, the sharder components are only executed as long as the instance is the current leader as they must not run in multiple instances concurrently.
+I.e., there is only a single active sharder at any given time and the sharder components in additional instances are on standby.
+The sharder uses a metadata-only watch for all the sharded objects to minimize the resulting resource footprint.
 
 Each controller instance ("shard") maintains an individual lease ("shard lease"), which is used as a heartbeat resource to inform the sharder about the health status of all instances.
-The sharder watches the shard leases in addition to the sharded API objects themselves in order to react on state changes, e.g., addition or removal of shards.
-The sharded controllers watch and cache only the objects they are responsible for by filtering the watch/cache using a label selector on the `shard` label.
+The sharder watches the shard leases in addition to the sharded API objects themselves in order to react to state changes, e.g., the addition or removal of shards.
+The main controllers in all shards watch and cache only the objects they are responsible for by filtering the watch connection using a label selector on the `shard` label.
 
 ## Membership and Failure Detection {#sec:des-membership}
 
-To address requirement \ref{req:membership}, a lease-based membership and failure detection mechanism is used.
-The mechanism is heavily inspired by Bigtable [@bigtable2006] but adapted to use Kubernetes `Lease` objects stored in etcd instead of leases stored in Chubby [@chubby2006].
+To address requirement \ref{req:membership}, a lease-based membership and failure detection mechanism are used.
+The mechanism is heavily inspired by Bigtable but adapted to use Kubernetes `Lease` objects stored via the API server instead of leases stored in Chubby [@bigtable2006].
 
-The sharder performs usual leader election to ensure that there is only one active sharder at any given time.
+The sharder performs the usual leader election to ensure that there is only one active sharder at any given time.
 Additionally, each shard maintains an individual shard lease.
-Like usual leader election, the `Lease` API resource with the same fields and semantics is used for this purpose.
+Like usual leader election, the `Lease` API resource with the same fields and semantics are used for this purpose.
 However, shard leases use individual names that are equal to the shard's instance ID.
-The instance ID needs to be stable between restarts of the shard, so the hostname is used, i.e. the controller's Pod name.
+The instance ID needs to be stable between restarts of the shard, so the hostname is used, i.e., the controller's `Pod` name.
 On startup, the shards acquire the respective shard lease using the instance ID as name and holder identity.
-As with usual leader election, the shards periodically renew their leases after a configured duration.
+As with the usual leader election, the shards periodically renew their leases after a configured duration.
 As long as the shard actively holds its lease, it watches and reconciles objects that are assigned to itself.
 If the shard fails to renew its lease within a configured period, it needs to stop all sharded controllers immediately and terminate.
 
@@ -50,17 +51,17 @@ With this, all objects assigned to the terminated shard are moved to other avail
 
 Shard failures are detected by checking the leases' `renewTimestamp` field.
 If a shard fails to renew its lease within `leaseDurationSeconds`, the lease is considered expired.
-To decrease sensitivity of the system, the sharder waits for another `leaseDurationSeconds` and allows the instance to renew its lease again.
+To decrease the sensitivity of the system, the sharder waits for another `leaseDurationSeconds` and allows the instance to renew its lease again.
 If the shard comes available again by renewing its lease it is considered ready again.
 If the shard fails to renew its lease though, the sharder considers the instance unavailable.
-However, before it removing the instance from partitioning, it tries to acquire the shard lease once.
+However, before it removes the instance from partitioning, it tries to acquire the shard lease once.
 This is done to ensure the API server is functioning and the sharder doesn't act on stale lease data.
-If the sharder is able to acquire the shard lease, it considers the instance dead, removes it from partitioning and moves objects to available instances.
-Afterwards, the sharder doesn't touch the shard lease anymore.
+If the sharder is able to acquire the shard lease, it considers the instance dead, removes it from partitioning, and moves objects to available instances.
+Afterward, the sharder doesn't touch the shard lease anymore.
 With this, the shard is allowed to acquire its lease once it comes up again after the lease duration set by the sharder has passed.
-If this is successful, the instance is considered ready and considered again for partitioning.
+If this is successful, the instance is considered ready and included in partitioning again.
 
-The sharder garbage collects leases of dead shards after 1 minute of inactivity.
+The sharder garbage collects leases of dead shards after a period of inactivity.
 With this, leases of voluntarily terminated instances as well as failed instances get cleaned up eventually.
 
 ## Partitioning
