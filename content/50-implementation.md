@@ -7,7 +7,7 @@ The presented implementation is used for evaluation in [chapter @sec:evaluation]
 
 ## Webhosting Operator {#sec:webhosting-operator}
 
-[^webhosting-operator]: [https://github.com/timebertt/kubernetes-controller-sharding](https://github.com/timebertt/kubernetes-controller-sharding)
+[^webhosting-operator]: [https://github.com/timebertt/kubernetes-controller-sharding/tree/v1.0](https://github.com/timebertt/kubernetes-controller-sharding/tree/v1.0)
 
 To implement and evaluate the presented design, an operator is needed that serves as an example.
 The sample operator should fulfill the following criteria so that the most important aspects of sharding in Kubernetes controllers can be covered and evaluated:
