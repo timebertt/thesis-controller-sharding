@@ -28,13 +28,13 @@ def tbl_alignment(s):
         'AlignRight': r'\raggedleft',
     }
 
-    cols = len(s) + 2
+    cols = len(s)
     result = []
 
     for col in s:
         align = aligns[col[0]['t']]
         width = col[1]['c']
-        result.append(r'>{%s\arraybackslash}p{(\columnwidth - %d\tabcolsep) * \real{%.4f}}' % (align, cols, width))
+        result.append(r'>{%s\arraybackslash}p{(\columnwidth - %d\tabcolsep) * \real{%.4f}}' % (align, cols*2, width))
 
     return result
 
