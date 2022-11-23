@@ -85,12 +85,10 @@ The reconciliations themselves are very short, making the controller responsive 
 
 ## Architecture
 
-The webhosting operator is based on the controller-runtime[^controller-runtime] library.
+The webhosting operator is based on the controller-runtime library.
 The library provides reusable constructs for building custom Kubernetes controllers and operators in the go programming language.
 In controller-runtime, the `Manager` is the most important construct.
-A `Manager` is initialized and started once per operator as the root component and manages all other components like controllers, webhook server and handlers, leader election, metrics endpoints, loggers, etc.
-
-[^controller-runtime]: [https://github.com/kubernetes-sigs/controller-runtime](https://github.com/kubernetes-sigs/controller-runtime)
+A `Manager` is initialized and started once per operator as the root component and manages all other components like controllers, webhook server and handlers, leader election, metrics endpoints, loggers, etc. [@kubebuilder; @controllerruntime]
 
 Individual controllers can be implemented by creating a corresponding `Controller` construct and configuring a `Reconciler`, watches, and event handlers.
 The `Reconciler` contains the business logic of a controller.
@@ -100,7 +98,7 @@ The configured watches and event handlers are responsible for enqueuing reconcil
 Typically, `Predicates` are used to filter for relevant watch events emitted by the API server.
 The `Controller` itself ensures that all components including cache, event handlers, work queue, and worker routines are correctly set up.
 All `Controllers` are registered with the `Manager` which then ensures that the controllers are started when the leader election is won and stopped as soon as the leader election is lost.
-It also injects shared dependencies like client, cache and loggers into the individual controllers.
+It also injects shared dependencies like client, cache and loggers into the individual controllers. [@controllerruntime]
 
 As part of this thesis, the presented design ([chapter @sec:design]) was fully implemented generically in the controller-runtime library that allows reusing the mechanisms in all operators based on the library.
 The webhosting operator makes use of the implemented sharding mechanisms in controller-runtime for demonstration and evaluation purposes.
@@ -162,13 +160,13 @@ The next sections explain the implementation of all components in detail.
 
 ## Shard Lease {#sec:impl-shard-lease}
 
-When configured for sharding, the manager keeps performing leader election ([-@sec:leader-election]) and runs the sharder components only when it has successfully acquired leadership.
-In addition to that, the manager also maintains the individual shard lease ([-@sec:des-membership]).
+When configured for sharding, the manager keeps performing leader election ([@sec:leader-election]) and runs the sharder components only when it has successfully acquired leadership.
+In addition to that, the manager also maintains an individual shard lease ([@sec:des-membership]).
 The mechanism executes the same leader election code, however with an individual lease name.
 For shard leases, the instance's hostname is used for both the lease name and holder identity.
 As long as the manager is able to renew the shard lease it keeps running the sharded controllers.
 
-When adding controllers or other `Runnables` to a manager via `manager.Add` they can signal whether they need to run under leader election or not by implementing the `LeaderElectionRunnable` interface.
+When adding controllers and other `Runnables` to a manager via `manager.Add` they can signal whether they need to run under leader election or not by implementing the `LeaderElectionRunnable` interface.
 For example, controllers implement this interface by default to always run with leader election.
 A new interface is introduced to distinguish between usual and sharded controllers: `ShardedRunnable`.
 
@@ -183,8 +181,8 @@ type ShardedRunnable interface {
 : The ShardedRunnable interface {#lst:sharded-runnable}
 
 When creating a sharded controller using the builder, the manager recognizes the `SharedRunnable` implementation and starts it as soon as the shard lease has been acquired even if the instance is currently not the leader.
-Similar to usual leader election, the manager process exits immediately when it fails to renew its shard lease.
-When the manager is stopped, it engages a graceful termination procedure and releases its shard lease to signal voluntary disruption, i.e. sets `spec.holderIdentity=null`.
+Similar to the usual leader election, the manager process exits immediately when it fails to renew its shard lease.
+When the manager is stopped, it engages a graceful termination procedure and releases its shard lease to signal voluntary disruption, i.e. it sets `spec.holderIdentity=null`.
 
 ## Lease Controller {#sec:impl-lease-controller}
 
@@ -193,7 +191,7 @@ For a given shard lease, it first determines the instance's state and then adds 
 The shard states are defined by the following rules:
 
 - `Ready`: the lease is held by the shard itself (`metadata.name` is equal to the `holderIdentity`) and has not expired (`renewTime + leaseDurationSeconds` has not passed yet)
-- `Expired`: the lease is held by the shard but has expired up to `leaseDurationSeconds` ago 
+- `Expired`: the lease is held by the shard but has expired up to `leaseDurationSeconds` ago
 - `Uncertain`: the lease is held by the shard and has expired more than `leaseDurationSeconds` ago
 - `Dead`: the lease is not held by the shard anymore, either because the shard released its lease or it was acquired by the sharder (lease controller)
 - `Orphaned`: the lease is in state `Dead` and has expired at least 1 minute ago
@@ -201,21 +199,21 @@ The shard states are defined by the following rules:
 The main responsibility of the lease controller is to act on leases of unavailable shards.
 Once shard leases transition to state `Uncertain`, it acquires the lease by setting `holderIdentity` to `sharder`.
 For this, it uses a `leaseDuration` twice as long as the `leaseDuration` of the shard.
-Acquiring the shard lease is done to ensure the API server is functioning before removing the shard from partitioning (see [-@sec:des-membership]).
-Additionally, the lease controller deletes shard leases in state `Orphaned` to not pollute the system.
-The shard controller reconciles leases as soon as its state changes, either because of a create/update event or because one of the relevant durations has passed.
+Acquiring the shard lease is done to ensure the API server is functioning before removing the shard from partitioning ([@sec:des-membership]).
+Additionally, the lease controller deletes shard leases in the state `Orphaned` to not pollute the system.
+The shard controller reconciles leases as soon as their state changes, either because of a create/update event or because one of the relevant durations has passed.
 
 ## Sharder Controllers {#sec:impl-sharder-controllers}
 
 For every sharded object kind, the controller builder adds a sharder controller that runs under leader election.
 It is responsible for assigning the sharded objects to available shards by setting the `shard` label based on the shard state information.
-For this, it starts a lightweight metadata-only watch on the respective object kind.
+For this, it starts a lightweight metadata-only watch/cache for the respective object kind.
 As soon as objects are created or need to be re-assigned the controller performs reconciliation.
-Additionally, it watches leases and enqueues relevant sharded objects when a shard's availability changes.
+Additionally, it watches the shard leases and enqueues relevant sharded objects when a shard's availability changes.
 
 On every reconciliation, the controller lists all shard leases from the cache.
-It then constructs a hash ring including all shards that are not in state `Dead` or `Orphaned`.
-As this operation is executed for every sharder reconciliation, it is saved for reuse in a dedicated cache that is shared across all sharder controller belonging to a given sharded controller.
+It then constructs a hash ring including all shards that are not in the state `Dead` or `Orphaned`.
+As this operation is executed for every sharder reconciliation, it is saved for reuse in a dedicated cache that is shared across all sharder controllers belonging to a given sharded controller.
 The cached ring is recalculated when a lease is updated.
 In the hash ring, 100 tokens are added per shard by default for better distribution of objects across a low number of shards (inspired by groupcache [@groupcache]).
 
@@ -248,7 +246,7 @@ func (r *Ring) AddNodes(nodes ...string) {
 
 : Adding shards to the hash ring {#lst:ring-add}
 
-After retrieving the hash ring, the object is mapped to a partition key.
+After calculating the hash ring, the object is mapped to a partition key.
 For the main object kind of sharded controllers, the partition key follows this pattern:
 
 `<kind>.<group>/<namespace>/<name>/<uid>`
@@ -278,15 +276,15 @@ func (r *Ring) Hash(key string) string {
 : Consistent hashing of object keys {#lst:ring-hash}
 
 If the object is not assigned yet, the sharder controller simply patches the object's `shard` label to the desired shard.
-However, if the object is already assigned to a different shard, the sharder controller first adds the `drain` label to object in order to wait for acknowledgment by the current shard (see [-@sec:des-concurrency]).
+However, if the object is already assigned to a different shard, the sharder controller first adds the `drain` label to the object to wait for acknowledgment by the current shard ([@sec:des-concurrency]).
 This operation is only performed for the main object kind of the sharded controller, as it does not perform mutating actions on owned objects as long as it isn't responsible for the owning object.
 Hence, concurrency is already prevented by the drain operation of the main object and doesn't need to be handled separately for owned objects.
 
 ## Object Controller {#sec:impl-object-controller}
 
 The actual sharded controller is modified by the builder to handle the sharding mechanisms.
-First, the controller implements the `ShardedRunnable` interface so that all instances run the controller instead of only the leader.
-Also, the builder constructs a cache that automatically delegates all read operations to either the sharded (filtered) cache or unfiltered cache according to whether they are configured to be sharded or not.
+First, the controller implements the `ShardedRunnable` interface so that all instances run the controller and not only the leader.
+Also, the builder constructs a cache that automatically delegates all read operations to either the sharded (filtered) cache or unfiltered cache according to whether they are configured to be sharded or not (as shown in [@lst:controller-setup]).
 This cache is injected into the object controller instead of the unfiltered cache.
 With this, the sharded controller automatically uses the filtered cache as desired while it is still able to read other non-sharded objects.
 
@@ -295,7 +293,7 @@ This is done by wrapping the actual reconciler with another generic reconciler.
 On each reconciliation, it checks if the object is still assigned to the respective shard by reading the `shard` label.
 If the object is not assigned to the shard anymore, it is discarded.
 Before delegating reconciliation requests to the actual reconciler, it also checks the `drain` label.
-In case the `drain` label is present, the controller removes both the `shard` and `drain` label from the object and stops reconciling it.
+In case the `drain` label is present, the controller removes both the `shard` and `drain` labels from the object and stops reconciling it.
 Lastly, the controller's predicates are adjusted to immediately react to events in which the object has the `drain` label.
 This effectively allows setting up a sharded controller without changes to the controller's code.
 

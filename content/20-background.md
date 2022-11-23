@@ -17,11 +17,11 @@ The only component communicating directly with etcd is the API server, all other
 
 The Kubernetes **API server** exposes a REST API [@fielding2000architectural] – the Kubernetes API – as the single point of entry for all cluster operations.
 As a stateless component, it can be scaled horizontally in order to increase throughput and availability by load balancing between multiple instances [@bondi2000characteristics].
-The cluster's state is persisted and managed in form of API objects following the "Kubernetes Resource Model" (see [-@sec:resourcemodel]).
+The cluster's state is persisted and managed in form of API objects following the "Kubernetes Resource Model" ([@sec:resourcemodel]).
 The API server allows retrieving and manipulating objects via standard HTTP mechanisms using the respective API endpoints.
 It transforms API objects from and to the storage format that is used for persisting them in etcd.
 For human users of the API, objects are typically presented in YAML.
-The operations on objects and related mechanics that the API server exposes are often referred to as "API machinery" (see [-@sec:apimachinery]).
+The operations on objects and related mechanics that the API server exposes are often referred to as "API machinery" ([@sec:apimachinery]).
 
 Kubernetes **controllers** control the actual state of the cluster to match the desired state, that the user or other controllers specified declaratively.
 Controllers work on individual API objects retrieved from the API server and implement their actual business logic.
@@ -241,7 +241,7 @@ However, most controllers use go to benefit from the matured and performance-opt
 ![Building blocks of a controller [@samplecontroller]](../assets/controller-components.jpeg)
 
 A controller's **cache** is responsible for watching the controller's object type on the API server, informing the controller about changes to the objects, and making the objects available to the controller in memory in form of an indexed store.
-Therefore, it starts a so-called reflector that lists and watches a given object type as described in section [-@sec:apimachinery].
+Therefore, it starts a so-called reflector that lists and watches a given object type as described in [@sec:apimachinery].
 The reflector emits corresponding delta events and adds them to a queue.
 An informer then reads these events from the queue and updates changed objects in the store accordingly for later retrieval by the controller.
 The store (indexer) is a flat key-value store with additional indices for increasing the performance of namespaced lookups or lookups with field selectors, that the controller frequently uses.
