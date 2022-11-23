@@ -2,7 +2,7 @@
 
 [![Build Status](https://github.com/timebertt/thesis-controller-sharding/actions/workflows/build.yaml/badge.svg)](https://github.com/timebertt/thesis-controller-sharding/actions/workflows/build.yaml)
 
-Get the current PDF by clicking the badge above️, navigating to the latest build and downloading the `paper` artifact.
+Read the full paper [here](https://github.com/timebertt/thesis-controller-sharding/releases/tag/v1.0)!
 
 ## About
 
