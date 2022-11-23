@@ -8,10 +8,12 @@ set \parskip to zero for lists to get a harmonized layout
 
 \setlength{\parskip}{0em}
 
+<!--
 \todototoc
 \listoftodos{}
 
 \newpage
+-->
 
 \listoffigures
 \listoftables
