@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 from common import *
 
-plt.figure(figsize=(10, 6))
+plt.figure(figsize=(10, 5))
 
 ax1 = plt.subplot(121)
 data = read_data('base/sharded-cpu.csv')
