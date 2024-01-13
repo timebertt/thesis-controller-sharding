@@ -1,7 +1,5 @@
 # Towards Horizontally Scalable Kubernetes Controllers
 
-[![Build Status](https://github.com/timebertt/thesis-controller-sharding/actions/workflows/build.yaml/badge.svg)](https://github.com/timebertt/thesis-controller-sharding/actions/workflows/build.yaml)
-
 Read the full paper [here](https://github.com/timebertt/thesis-controller-sharding/releases/tag/v1.0)!
 
 ## About
