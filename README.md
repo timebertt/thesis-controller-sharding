@@ -8,6 +8,9 @@ This is a study thesis (study project / half-time thesis) part of my master's st
 
 You can find the implementation that was done as part of this thesis in the repository [kubernetes-controller-sharding](https://github.com/timebertt/kubernetes-controller-sharding/tree/v1.0).
 
+I continued the project and research in my Master's thesis "Horizontally Scalable Kubernetes Controllers".
+You can find the Master's thesis in the [masters-thesis-controller-sharding](https://github.com/timebertt/masters-thesis-controller-sharding) repository.
+
 ## Abstract
 
 Controllers play an essential role in every Kubernetes cluster by realizing the desired state specified declaratively in API objects – a process referred to as reconciliation.
